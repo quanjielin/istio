@@ -94,6 +94,7 @@ func NewHandlerFactory(tmplRepo TemplateFinder, expr expr.TypeChecker, df expr.A
 func (h *handlerFactory) Build(handler *pb.Handler, instances []*pb.Instance, env adapter.Env) (adapter.Handler, error) {
 	infrdTypsByTmpl, err := h.inferTypesGrpdByTmpl(instances)
 	if err != nil {
+		log.Errorf("******************error is %s", err.Error())
 		log.Error(err.Error())
 		return nil, err
 	}
@@ -216,9 +217,16 @@ func (h *handlerFactory) inferType(instance *pb.Instance) (proto.Message, error)
 
 	// ti should be there since the config is already validated
 	tmplInfo, _ := h.tmplRepo.GetTemplateInfo(instance.GetTemplate())
+	log.Infof("***************************instance %v, tmplInfo %v", instance, tmplInfo)
 
 	infrdType, err = tmplInfo.InferType(instance.GetParams().(proto.Message), func(expr string) (pbd.ValueType, error) {
-		return h.typeChecker.EvalType(expr, h.attrDescFinder)
+		log.Infof("***************************expr %s", expr)
+		r, er := h.typeChecker.EvalType(expr, h.attrDescFinder)
+		if er != nil {
+			log.Infof("***************************er: %v", er)
+		}
+
+		return r, er
 	})
 	if err != nil {
 		return nil, fmt.Errorf("cannot infer type information from params in instance '%s': %v", instance.Name, err)

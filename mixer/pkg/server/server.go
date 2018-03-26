@@ -99,6 +99,8 @@ func newPatchTable() *patchTable {
 }
 
 func newServer(a *Args, p *patchTable) (*Server, error) {
+	log.Infof("*******************newServer arg %v", a)
+
 	if err := a.validate(); err != nil {
 		return nil, err
 	}
