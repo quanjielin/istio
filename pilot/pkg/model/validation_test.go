@@ -1780,19 +1780,6 @@ func TestValidateEndUserAuthenticationPolicySpec(t *testing.T) {
 			},
 		},
 		{
-			name: "missing jwks_uri",
-			in: &mccpb.EndUserAuthenticationPolicySpec{
-				Jwts: []*mccpb.JWT{{
-					Issuer:                 "https://issuer.example.com",
-					Audiences:              []string{"audience_foo.example.com"},
-					PublicKeyCacheDuration: types.DurationProto(5 * time.Minute),
-					Locations: []*mccpb.JWT_Location{{
-						Scheme: &mccpb.JWT_Location_Header{Header: "x-goog-iap-jwt-assertion"},
-					}},
-				}},
-			},
-		},
-		{
 			name: " jwks_uri with missing scheme",
 			in: &mccpb.EndUserAuthenticationPolicySpec{
 				Jwts: []*mccpb.JWT{{
