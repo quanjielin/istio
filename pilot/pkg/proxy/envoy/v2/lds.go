@@ -29,6 +29,9 @@ func (s *DiscoveryServer) pushLds(node model.Proxy, con *XdsConnection) error {
 		return err
 	}
 	con.HTTPListeners = ls
+
+	log.Infof("**************************pushLds ls %+v********************", ls)
+
 	response, err := ldsDiscoveryResponse(ls, node)
 	if err != nil {
 		log.Warnf("LDS: config failure, closing grpc %v", err)

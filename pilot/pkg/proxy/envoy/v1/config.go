@@ -416,6 +416,7 @@ func buildHTTPListener(opts buildHTTPListenerOpts) *Listener {
 	}
 
 	if filter := buildJwtFilter(opts.authnPolicy); filter != nil {
+		log.Infof("*******************jwt filter is %+v", filter)
 		filters = append([]HTTPFilter{*filter}, filters...)
 	}
 

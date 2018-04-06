@@ -425,6 +425,8 @@ func (c *mockController) Run(<-chan struct{}) {}
 
 // initConfigController creates the config controller in the pilotConfig.
 func (s *Server) initConfigController(args *PilotArgs) error {
+	log.Infof("****************pilot initConfigController %s******************************", "quanjielin")
+
 	if args.Config.FileDir != "" {
 		store := memory.Make(configDescriptor)
 		configController := memory.NewController(store)

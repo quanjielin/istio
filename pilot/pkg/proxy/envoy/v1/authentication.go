@@ -43,11 +43,13 @@ func buildJwtFilter(policy *authn.Policy) *HTTPFilter {
 		log.Errorf("Unable to convert Jwt filter config proto: %v", err)
 		return nil
 	}
-	return &HTTPFilter{
+	f := &HTTPFilter{
 		Type:   decoder,
 		Name:   jwtFilterName,
 		Config: config,
 	}
+	log.Infof("***************************buildJwtFilter %+v", f)
+	return f
 }
 
 // buildJwksURIClustersForProxyInstances checks the authentication policy for the
@@ -105,5 +107,7 @@ func buildJwksURIClusters(jwtSpecs []*authn.Jwt, timeout *duration.Duration) Clu
 
 		clusters = append(clusters, cluster)
 	}
+
+	log.Infof("***************************buildJwksURIClusters %+v", clusters)
 	return clusters
 }

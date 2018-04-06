@@ -16,7 +16,10 @@ package model
 
 import (
 	"crypto/sha1"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"strconv"
 
@@ -32,6 +35,10 @@ import (
 const (
 	// Defautl cache duration for JWT public key. This should be moved to a global config.
 	jwtPublicKeyCacheSeconds = 60 * 5
+
+	// OpenID Providers supporting Discovery MUST make a JSON document available at the path formed by concatenating the string /.well-known/openid-configuration to the Issuer.
+	// according to https://openid.net/specs/openid-connect-discovery-1_0.html
+	openIDDiscoveryCfgUrlSuffix = "/.well-known/openid-configuration"
 )
 
 // GetConsolidateAuthenticationPolicy returns the authentication policy for
@@ -184,6 +191,7 @@ func CollectJwtSpecs(policy *authn.Policy) []*authn.Jwt {
 // The output of this function should use the Envoy data-plane-api proto once
 // this migration finished.
 func ConvertPolicyToJwtConfig(policy *authn.Policy) *jwtfilter.JwtAuthentication {
+	log.Infof("*********************ConvertPolicyToJwtConfig - quanjie*********************")
 	policyJwts := CollectJwtSpecs(policy)
 	if len(policyJwts) == 0 {
 		return nil
@@ -192,11 +200,20 @@ func ConvertPolicyToJwtConfig(policy *authn.Policy) *jwtfilter.JwtAuthentication
 		AllowMissingOrFailed: true,
 	}
 	for _, policyJwt := range policyJwts {
-		hostname, port, _, err := ParseJwksURI(policyJwt.JwksUri)
+		jwksUri, err := getJwksUri(policyJwt)
 		if err != nil {
-			log.Errorf("Cannot parse jwks_uri %q: %v", policyJwt.JwksUri, err)
+			log.Errorf("Cannot get jwks_uri %q: %v", policyJwt.Issuer, err)
 			continue
 		}
+
+		log.Infof("****************ConvertPolicyToJwtConfig jwksUri is %q", jwksUri)
+
+		hostname, port, _, err := ParseJwksURI(jwksUri)
+		if err != nil {
+			log.Errorf("Cannot parse jwks_uri %q: %v", jwksUri, err)
+			continue
+		}
+		log.Infof("*********************ConvertPolicyToJwtConfig JwksUri %s, hostname %s, port %+v*********************", jwksUri, hostname, port)
 
 		jwt := &jwtfilter.JwtRule{
 			Issuer:    policyJwt.Issuer,
@@ -204,7 +221,7 @@ func ConvertPolicyToJwtConfig(policy *authn.Policy) *jwtfilter.JwtAuthentication
 			JwksSourceSpecifier: &jwtfilter.JwtRule_RemoteJwks{
 				RemoteJwks: &jwtfilter.RemoteJwks{
 					HttpUri: &core.HttpUri{
-						Uri: policyJwt.JwksUri,
+						Uri: jwksUri,
 						HttpUpstreamType: &core.HttpUri_Cluster{
 							Cluster: JwksURIClusterName(hostname, port),
 						},
@@ -222,5 +239,44 @@ func ConvertPolicyToJwtConfig(policy *authn.Policy) *jwtfilter.JwtAuthentication
 		jwt.FromParams = policyJwt.JwtParams
 		ret.Rules = append(ret.Rules, jwt)
 	}
+
+	log.Infof("*********************ConvertPolicyToJwtConfig - return %+v*********************", ret)
 	return ret
+}
+
+func getJwksUri(policyJwt *authn.Jwt) (string, error) {
+	// Return directly if policyJwt.JwksUri is set, this could happen if policyJwt.Issuer is an email address.
+	if policyJwt.JwksUri != "" {
+		return policyJwt.JwksUri, nil
+	}
+
+	// If policyJwt.Issuer isn't set, try to get it through OpenID Discovery.
+	// according https://openid.net/specs/openid-connect-discovery-1_0.html,
+	// OpenID Providers supporting Discovery MUST make a JSON document available at the path formed by concatenating the string /.well-known/openid-configuration to the Issuer.
+	discoveryUrl := policyJwt.Issuer + openIDDiscoveryCfgUrlSuffix
+	log.Infof("*********************getJwksUri - discoveryUrl %s*********************", discoveryUrl)
+
+	resp, err := http.Get(discoveryUrl)
+	if err != nil {
+		log.Errorf("*********************getJwksUri - failure to get openID discovery configuration, %v", err)
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("*********************getJwksUri - failure to read openID discovery configuration, %v", err)
+		return "", err
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal([]byte(body), &data); err != nil {
+		return "", err
+	}
+
+	jwksUri, ok := data["jwks_uri"].(string)
+	if !ok {
+		return "", fmt.Errorf("Invalid jwks_uri %v in openID discovery configuration", data["jwks_uri"])
+	}
+
+	return jwksUri, nil
 }

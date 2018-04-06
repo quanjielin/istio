@@ -529,3 +529,41 @@ func TestConvertPolicyToJwtConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestGetJwksURI(t *testing.T) {
+	cases := []struct {
+		in                   *authn.Jwt
+		expectedJwksUri      string
+		expectedErrorMessage string
+	}{
+		{
+			in: &authn.Jwt{
+				Issuer:  "svc1@proj.iam.gserviceaccount.com",
+				JwksUri: "https://www.googleapis.com/service_accounts/v1/jwk/svc1@proj.iam.gserviceaccount.com",
+			},
+			expectedJwksUri: "https://www.googleapis.com/service_accounts/v1/jwk/svc1@proj.iam.gserviceaccount.com",
+		},
+		{
+			in: &authn.Jwt{
+				Issuer: "https://accounts.google.com",
+			},
+			expectedJwksUri: "https://www.googleapis.com/oauth2/v3/certs",
+		},
+	}
+	for _, c := range cases {
+		jwksUri, err := getJwksUri(c.in)
+		if err != nil {
+			if c.expectedErrorMessage != err.Error() {
+				t.Errorf("getJwksUri(%+v): expected error (%s), got (%v)", c.in, c.expectedErrorMessage, err)
+			}
+		} else {
+			if c.expectedErrorMessage != "" {
+				t.Errorf("getJwksUri(%+v): expected error (%s), got no error", c.in, c.expectedErrorMessage)
+			}
+			if c.expectedJwksUri != jwksUri {
+				t.Errorf("getJwksUri(%+v): expected (%s), got (%s)",
+					c.in, c.expectedJwksUri, jwksUri)
+			}
+		}
+	}
+}

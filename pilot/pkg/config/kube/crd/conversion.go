@@ -181,6 +181,7 @@ func ParseInputs(inputs string) ([]model.Config, []IstioKind, error) {
 		}
 
 		if err := schema.Validate(config.Spec); err != nil {
+			log.Infof("*******************ParseInputs validate fail - quanjie, validFunc %v", schema.Validate)
 			return nil, nil, fmt.Errorf("configuration is invalid: %v", err)
 		}
 

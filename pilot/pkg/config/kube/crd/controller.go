@@ -172,6 +172,7 @@ func (c *controller) Run(stop <-chan struct{}) {
 	go c.queue.Run(stop)
 
 	for _, ctl := range c.kinds {
+		log.Info("*************crd controller run - quanjie**************")
 		go ctl.informer.Run(stop)
 	}
 

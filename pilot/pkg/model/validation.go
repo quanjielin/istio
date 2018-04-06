@@ -39,6 +39,7 @@ import (
 	networking "istio.io/api/networking/v1alpha3"
 	rbac "istio.io/api/rbac/v1alpha1"
 	routing "istio.io/api/routing/v1alpha1"
+	"istio.io/istio/pkg/log"
 )
 
 const (
@@ -1789,11 +1790,10 @@ func validateJwt(jwt *authn.Jwt) (errs error) {
 			errs = multierror.Append(errs, errors.New("audience must be non-empty string"))
 		}
 	}
-	if jwt.JwksUri == "" {
-		errs = multierror.Append(errs, errors.New("jwks_uri must be set"))
-	}
-	if _, _, _, err := ParseJwksURI(jwt.JwksUri); err != nil {
-		errs = multierror.Append(errs, err)
+	if jwt.JwksUri != "" {
+		if _, _, _, err := ParseJwksURI(jwt.JwksUri); err != nil {
+			errs = multierror.Append(errs, err)
+		}
 	}
 
 	for _, location := range jwt.JwtHeaders {
@@ -1832,6 +1832,8 @@ func validateAuthNPolicyTarget(target *authn.TargetSelector) (errs error) {
 
 // ValidateEndUserAuthenticationPolicySpec checks that EndUserAuthenticationPolicySpec is well-formed.
 func ValidateEndUserAuthenticationPolicySpec(msg proto.Message) error {
+	log.Infof("***************ValidateEndUserAuthenticationPolicySpec started")
+
 	in, ok := msg.(*mccpb.EndUserAuthenticationPolicySpec)
 	if !ok {
 		return errors.New("cannot case to EndUserAuthenticationPolicySpec")
@@ -1849,14 +1851,16 @@ func ValidateEndUserAuthenticationPolicySpec(msg proto.Message) error {
 				errs = multierror.Append(errs, errors.New("audience must be non-empty string"))
 			}
 		}
-		if jwt.JwksUri == "" {
-			errs = multierror.Append(errs, errors.New("jwks_uri must be set"))
-		}
-		if !strings.HasPrefix(jwt.JwksUri, "http://") && !strings.HasPrefix(jwt.JwksUri, "https://") {
-			errs = multierror.Append(errs, errors.New("jwks_uri must have http:// or https:// scheme"))
-		}
-		if _, err := url.Parse(jwt.JwksUri); err != nil {
-			errs = multierror.Append(errs, fmt.Errorf("%q is not a valid url: %v", jwt.JwksUri, err))
+
+		log.Infof("***************ValidateEndUserAuthenticationPolicySpec JwksUri is %q", jwt.JwksUri)
+
+		if jwt.JwksUri != "" {
+			if !strings.HasPrefix(jwt.JwksUri, "http://") && !strings.HasPrefix(jwt.JwksUri, "https://") {
+				errs = multierror.Append(errs, errors.New("jwks_uri must have http:// or https:// scheme"))
+			}
+			if _, err := url.Parse(jwt.JwksUri); err != nil {
+				errs = multierror.Append(errs, fmt.Errorf("%q is not a valid url: %v", jwt.JwksUri, err))
+			}
 		}
 
 		for _, location := range jwt.Locations {
