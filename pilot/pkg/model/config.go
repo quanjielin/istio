@@ -15,10 +15,14 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 
@@ -27,6 +31,22 @@ import (
 	networking "istio.io/api/networking/v1alpha3"
 	routing "istio.io/api/routing/v1alpha1"
 	"istio.io/istio/pilot/pkg/model/test"
+	"istio.io/istio/pkg/cache"
+	"istio.io/istio/pkg/log"
+)
+
+const (
+	// https://openid.net/specs/openid-connect-discovery-1_0.html
+	// OpenID Providers supporting Discovery MUST make a JSON document available at the path
+	// formed by concatenating the string /.well-known/openid-configuration to the Issuer.
+	openIDDiscoveryCfgURLSuffix = "/.well-known/openid-configuration"
+
+	// OpenID Discovery web request timeout.
+	openIDDiscoveryHTTPTimeOut = 5
+
+	jwksURIExpiration = time.Second * 10
+
+	jwksURIEviction = time.Second * 3
 )
 
 // ConfigMeta is metadata attached to each configuration unit.
@@ -600,11 +620,13 @@ func ResolveShortnameToFQDN(host string, meta ConfigMeta) string {
 // from the generic config registry
 type istioConfigStore struct {
 	ConfigStore
+
+	Cache cache.ExpiringCache
 }
 
 // MakeIstioStore creates a wrapper around a store
 func MakeIstioStore(store ConfigStore) IstioConfigStore {
-	return &istioConfigStore{store}
+	return &istioConfigStore{store, cache.NewTTL(jwksURIExpiration, jwksURIEviction)}
 }
 
 // MatchSource checks that a rule applies for source service instances.
@@ -1010,9 +1032,16 @@ func (store *istioConfigStore) AuthenticationPolicyByDestination(hostname string
 			// Match on namespace level.
 			matchLevel = 2
 		}
+
 		// Swap output policy that is match in more specific scope.
 		if matchLevel > currentMatchLevel {
 			currentMatchLevel = matchLevel
+
+			store.SetAuthenticationPolicyJwksURIs(policy)
+			//out := Config{
+			//	ConfigMeta: spec.ConfigMeta,
+			//	Spec:       policy,
+			//}
 			out = spec
 		}
 	}
@@ -1090,4 +1119,71 @@ func SortEndUserAuthenticationPolicySpec(specs []Config) {
 		jrule, _ := specs[j].Spec.(*mccpb.EndUserAuthenticationPolicySpec)
 		return irule == nil || jrule == nil || (specs[i].Key() < specs[j].Key())
 	})
+}
+
+func (store *istioConfigStore) SetAuthenticationPolicyJwksURIs(policy *authn.Policy) {
+	if policy == nil {
+		return
+	}
+
+	for _, method := range policy.Peers {
+		switch method.GetParams().(type) {
+		case *authn.PeerAuthenticationMethod_Jwt:
+			policyJwt := method.GetJwt()
+			_ = store.setJwksURI(policyJwt)
+		}
+	}
+	for _, method := range policy.Origins {
+		policyJwt := method.GetJwt()
+		_ = store.setJwksURI(policyJwt)
+	}
+}
+
+// Set jwks_uri through openID discovery if it's not set in auth policy.
+func (store *istioConfigStore) setJwksURI(policyJwt *authn.Jwt) error {
+	if policyJwt.JwksUri != "" {
+		return nil
+	}
+
+	// Returns directly if the JwksUri can be found in cache.
+	if _, found := store.Cache.Get(policyJwt.Issuer); found {
+		return nil
+	}
+
+	// If policyJwt.Issuer isn't set, try to get it through OpenID Discovery.
+	discoveryURL := policyJwt.Issuer + openIDDiscoveryCfgURLSuffix
+	client := &http.Client{
+		Timeout: openIDDiscoveryHTTPTimeOut * time.Second,
+	}
+	resp, err := client.Get(discoveryURL)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if errr := resp.Body.Close(); errr != nil {
+			log.Errorf("Failed to close web response: %v", errr)
+		}
+	}()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	var data map[string]interface{}
+	if err := json.Unmarshal(body, &data); err != nil {
+		return err
+	}
+
+	jwksURI, ok := data["jwks_uri"].(string)
+	if !ok {
+		return fmt.Errorf("invalid jwks_uri %v in openID discovery configuration", data["jwks_uri"])
+	}
+
+	policyJwt.JwksUri = jwksURI
+
+	// Set JwksUri in cache.
+	store.Cache.Set(policyJwt.Issuer, jwksURI)
+
+	return nil
 }
