@@ -30,6 +30,7 @@ import (
 	authn_filter "istio.io/api/envoy/config/filter/http/authn/v2alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/networking/plugin/authn/mock"
+	"istio.io/istio/pkg/cache"
 )
 
 func TestRequireTls(t *testing.T) {
@@ -443,8 +444,10 @@ func TestConvertPolicyToJwtConfig(t *testing.T) {
 			},
 		},
 	}
+
+	cach := cache.NewTTL(jwksURIExpiration, jwksURIEviction)
 	for _, c := range cases {
-		if got := ConvertPolicyToJwtConfig(&c.in); !reflect.DeepEqual(c.expected, got) {
+		if got := ConvertPolicyToJwtConfig(&c.in, cach); !reflect.DeepEqual(c.expected, got) {
 			t.Errorf("Test case %s: expected\n%#v\n, got\n%#v", c.name, c.expected.String(), got.String())
 		}
 	}
@@ -532,8 +535,9 @@ func TestBuildJwtFilter(t *testing.T) {
 		},
 	}
 
+	cach := cache.NewTTL(jwksURIExpiration, jwksURIEviction)
 	for _, c := range cases {
-		if got := BuildJwtFilter(c.in); !reflect.DeepEqual(c.expected, got) {
+		if got := BuildJwtFilter(c.in, cach); !reflect.DeepEqual(c.expected, got) {
 			t.Errorf("buildJwtFilter(%#v), got:\n%#v\nwanted:\n%#v\n", c.in, got, c.expected)
 		}
 	}
@@ -854,6 +858,8 @@ func TestBuildSidecarListenerTLSContex(t *testing.T) {
 }
 
 func TestGetJwksURI(t *testing.T) {
+	cach := cache.NewTTL(jwksURIExpiration, jwksURIEviction)
+
 	ms := mock.NewServer(9999)
 	if err := ms.Start(); err != nil {
 		t.Fatal("failed to start mock openID discovery server")
@@ -888,7 +894,7 @@ func TestGetJwksURI(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		jwksURI, err := getJwksURI(c.in)
+		jwksURI, err := getJwksURI(c.in, cach)
 		if err != nil {
 			if !strings.Contains(err.Error(), c.expectedErrorMessage) {
 				t.Errorf("getJwksURI(%+v): expected error (%s), got (%v)", c.in, c.expectedErrorMessage, err)

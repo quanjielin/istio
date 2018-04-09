@@ -35,6 +35,7 @@ import (
 	"istio.io/istio/pilot/pkg/model"
 	"istio.io/istio/pilot/pkg/networking/plugin"
 	"istio.io/istio/pilot/pkg/networking/util"
+	"istio.io/istio/pkg/cache"
 	"istio.io/istio/pkg/log"
 )
 
@@ -59,14 +60,22 @@ const (
 
 	// OpenID Discovery web request timeout.
 	openIDDiscoveryHTTPTimeOut = 5
+
+	jwksURIExpiration = time.Second * 10
+
+	jwksURIEviction = time.Second * 3
 )
 
 // Plugin implements Istio mTLS auth
-type Plugin struct{}
+type Plugin struct {
+	c cache.ExpiringCache
+}
 
 // NewPlugin returns an instance of the authn plugin
 func NewPlugin() *Plugin {
-	return &Plugin{}
+	return &Plugin{
+		c: cache.NewTTL(jwksURIExpiration, jwksURIEviction),
+	}
 }
 
 // RequireTLS returns true and pointer to mTLS params if the policy use mTLS for (peer) authentication.
@@ -131,7 +140,7 @@ func OutputLocationForJwtIssuer(issuer string) string {
 }
 
 // ConvertPolicyToJwtConfig converts policy into Jwt filter config for envoy.
-func ConvertPolicyToJwtConfig(policy *authn.Policy) *jwtfilter.JwtAuthentication {
+func ConvertPolicyToJwtConfig(policy *authn.Policy, c cache.ExpiringCache) *jwtfilter.JwtAuthentication {
 	policyJwts := CollectJwtSpecs(policy)
 	if len(policyJwts) == 0 {
 		return nil
@@ -140,7 +149,7 @@ func ConvertPolicyToJwtConfig(policy *authn.Policy) *jwtfilter.JwtAuthentication
 		AllowMissingOrFailed: true,
 	}
 	for _, policyJwt := range policyJwts {
-		jwksURI, err := getJwksURI(policyJwt)
+		jwksURI, err := getJwksURI(policyJwt, c)
 		if err != nil {
 			log.Warnf("Cannot get jwks_uri for issuer %q: %v", policyJwt.Issuer, err)
 			continue
@@ -211,8 +220,8 @@ func ConvertPolicyToAuthNFilterConfig(policy *authn.Policy) *authn_filter.Filter
 }
 
 // BuildJwtFilter returns a Jwt filter for all Jwt specs in the policy.
-func BuildJwtFilter(policy *authn.Policy) *http_conn.HttpFilter {
-	filterConfigProto := ConvertPolicyToJwtConfig(policy)
+func BuildJwtFilter(policy *authn.Policy, c cache.ExpiringCache) *http_conn.HttpFilter {
+	filterConfigProto := ConvertPolicyToJwtConfig(policy, c)
 	if filterConfigProto == nil {
 		return nil
 	}
@@ -294,7 +303,7 @@ func (*Plugin) OnOutboundListener(in *plugin.CallbackListenerInputParams, mutabl
 // OnInboundListener is called whenever a new listener is added to the LDS output for a given service
 // Can be used to add additional filters (e.g., mixer filter) or add more stuff to the HTTP connection manager
 // on the inbound path
-func (*Plugin) OnInboundListener(in *plugin.CallbackListenerInputParams, mutable *plugin.CallbackListenerMutableObjects) error {
+func (p *Plugin) OnInboundListener(in *plugin.CallbackListenerInputParams, mutable *plugin.CallbackListenerMutableObjects) error {
 	if in.Node.Type != model.Sidecar {
 		// Only care about sidecar.
 		return nil
@@ -308,7 +317,7 @@ func (*Plugin) OnInboundListener(in *plugin.CallbackListenerInputParams, mutable
 	mutable.Listener.FilterChains[0].TlsContext = buildSidecarListenerTLSContext(authnPolicy)
 
 	// Adding Jwt filter and authn filter, if needed.
-	if filter := BuildJwtFilter(authnPolicy); filter != nil {
+	if filter := BuildJwtFilter(authnPolicy, p.c); filter != nil {
 		*mutable.HTTPFilters = append(*mutable.HTTPFilters, filter)
 	}
 	if filter := BuildAuthNFilter(authnPolicy); filter != nil {
@@ -385,11 +394,19 @@ func (*Plugin) OnOutboundCluster(env model.Environment, node model.Proxy, servic
 }
 
 // Get jwks_uri through openID discovery if it's not set in auth policy.
-func getJwksURI(policyJwt *authn.Jwt) (string, error) {
+func getJwksURI(policyJwt *authn.Jwt, c cache.ExpiringCache) (string, error) {
 	// Return directly if policyJwt.JwksUri is explicitly set.
 	// Ex, JwksUri should be set in auth policy when policyJwt.Issuer is an email address.
 	if policyJwt.JwksUri != "" {
 		return policyJwt.JwksUri, nil
+	}
+
+	if c != nil {
+		if v, ok := c.Get(policyJwt.Issuer); ok {
+			if uri, ok := v.(string); ok {
+				return uri, nil
+			}
+		}
 	}
 
 	// If policyJwt.Issuer isn't set, try to get it through OpenID Discovery.
@@ -421,6 +438,8 @@ func getJwksURI(policyJwt *authn.Jwt) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("invalid jwks_uri %v in openID discovery configuration", data["jwks_uri"])
 	}
+
+	c.Set(policyJwt.Issuer, jwksURI)
 
 	return jwksURI, nil
 }

@@ -22,6 +22,7 @@ import (
 
 	authn "istio.io/api/authentication/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/cache"
 )
 
 func TestBuildJwksFilter(t *testing.T) {
@@ -71,8 +72,9 @@ func TestBuildJwksFilter(t *testing.T) {
 		},
 	}
 
+	cach := cache.NewTTL(jwksURIExpiration, jwksURIEviction)
 	for _, c := range cases {
-		if got := buildJwtFilter(c.in); !reflect.DeepEqual(c.expected, got) {
+		if got := buildJwtFilter(c.in, cach); !reflect.DeepEqual(c.expected, got) {
 			t.Errorf("buildJwtFilter(%#v), got:\n%#v\nwanted:\n%#v\n", c.in, got, c.expected)
 		}
 	}

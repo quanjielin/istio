@@ -33,7 +33,14 @@ import (
 	routing "istio.io/api/routing/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	authn_plugin "istio.io/istio/pilot/pkg/networking/plugin/authn"
+	"istio.io/istio/pkg/cache"
 	"istio.io/istio/pkg/log"
+)
+
+const (
+	jwksURIExpiration = time.Second * 10
+
+	jwksURIEviction = time.Second * 3
 )
 
 var (
@@ -310,6 +317,7 @@ func buildSidecarListenersClusters(
 			outboundListener: true,
 			store:            config,
 			authnPolicy:      nil, /* authN policy is not needed for outbound listener */
+			c:                cache.NewTTL(jwksURIExpiration, jwksURIEviction),
 		}))
 		// TODO: need inbound listeners in HTTP_PROXY case, with dedicated ingress listener.
 	}
@@ -374,6 +382,7 @@ type buildHTTPListenerOpts struct { // nolint: maligned
 	outboundListener bool
 	store            model.IstioConfigStore
 	authnPolicy      *authn.Policy
+	c                cache.ExpiringCache
 }
 
 // buildHTTPListener constructs a listener for the network interface address and port.
@@ -407,7 +416,7 @@ func buildHTTPListener(opts buildHTTPListenerOpts) *Listener {
 		filters = append([]HTTPFilter{*filter}, filters...)
 	}
 
-	if filter := buildJwtFilter(opts.authnPolicy); filter != nil {
+	if filter := buildJwtFilter(opts.authnPolicy, opts.c); filter != nil {
 		filters = append([]HTTPFilter{*filter}, filters...)
 	}
 

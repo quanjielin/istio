@@ -23,12 +23,13 @@ import (
 	meshconfig "istio.io/api/mesh/v1alpha1"
 	"istio.io/istio/pilot/pkg/model"
 	authn_plugin "istio.io/istio/pilot/pkg/networking/plugin/authn"
+	"istio.io/istio/pkg/cache"
 	"istio.io/istio/pkg/log"
 )
 
 // buildJwtFilter returns a Jwt filter for all Jwt specs in the policy.
-func buildJwtFilter(policy *authn.Policy) *HTTPFilter {
-	filterConfigProto := authn_plugin.ConvertPolicyToJwtConfig(policy)
+func buildJwtFilter(policy *authn.Policy, c cache.ExpiringCache) *HTTPFilter {
+	filterConfigProto := authn_plugin.ConvertPolicyToJwtConfig(policy, c)
 	if filterConfigProto == nil {
 		return nil
 	}
