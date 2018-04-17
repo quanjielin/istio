@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"sort"
 	"strings"
 	"time"
@@ -340,6 +341,12 @@ const (
 	// JwksURI Cache eviction time duration, cache eviction is done on a periodic basis,
 	// jwksURICacheEviction specifies the frequency at which eviction activities take place.
 	jwksURICacheEviction = time.Minute * 30
+
+	jwkPubKeyCacheExpiration = time.Hour * 24
+
+	jwtPubKeyCacheEviction = time.Hour
+
+	jwtPubKeyRefreshInterval = 10 * time.Minute
 )
 
 /*
@@ -595,6 +602,16 @@ type authCache struct {
 	cache cache.ExpiringCache
 }
 
+type jwtPubKeyCache struct {
+	cache       cache.ExpiringCache
+	stopRefresh chan bool
+}
+
+type jwtPubKeyEntry struct {
+	pubKey        string
+	lastCheckTime time.Time
+}
+
 // istioConfigStore provides a simple adapter for Istio configuration types
 // from the generic config registry
 type istioConfigStore struct {
@@ -602,11 +619,50 @@ type istioConfigStore struct {
 
 	// AuthCache is a cache for auth(right now jwks_uri), it has some expiration logic on updating the URIs.
 	authCache authCache
+
+	jwtPubKeyCache jwtPubKeyCache
+}
+
+func NewAuthCache() authCache {
+	return authCache{
+		cache: cache.NewTTL(jwksURICacheExpiration, jwksURICacheEviction),
+	}
+}
+func NewJwtPubKeyCache() jwtPubKeyCache {
+	c := jwtPubKeyCache{
+		cache:       cache.NewTTL(jwkPubKeyCacheExpiration, jwtPubKeyCacheEviction),
+		stopRefresh: make(chan bool, 1),
+	}
+
+	go c.refresher(jwtPubKeyRefreshInterval)
+	runtime.SetFinalizer(nil, func() {
+		c.stopRefresh <- true
+	})
+
+	return c
 }
 
 // MakeIstioStore creates a wrapper around a store
 func MakeIstioStore(store ConfigStore) IstioConfigStore {
-	return &istioConfigStore{store, authCache{cache.NewTTL(jwksURICacheExpiration, jwksURICacheEviction)}}
+	return &istioConfigStore{
+		ConfigStore:    store,
+		authCache:      NewAuthCache(),
+		jwtPubKeyCache: NewJwtPubKeyCache(),
+	}
+}
+
+func (c *jwtPubKeyCache) refresher(refreshInterval time.Duration) {
+	ticker := time.NewTicker(refreshInterval)
+	for {
+		select {
+		case now := <-ticker.C:
+			c.refreshDued(now)
+		case <-c.stopRefresh:
+		}
+	}
+}
+
+func (c *jwtPubKeyCache) refreshDued(t time.Time) {
 }
 
 // MatchSource checks that a rule applies for source service instances.
@@ -1107,6 +1163,37 @@ func (c *authCache) getJwksURI(policyJwt *authn.Jwt) (string, error) {
 	c.cache.Set(policyJwt.Issuer, jwksURI)
 
 	return jwksURI, nil
+}
+
+func (c *jwtPubKeyCache) getJwtPubKey(jwksUri string) (string, error) {
+	// Set policyJwt.JwksUri if the JwksUri could be found in cache.
+	if entry, found := c.cache.Get(jwksUri); found {
+		return entry.(jwtPubKeyEntry).pubKey, nil
+	}
+
+	client := &http.Client{
+		Timeout: openIDDiscoveryHTTPTimeOutInSec * time.Second,
+	}
+	resp, err := client.Get(jwksUri)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	pubkey := string(body)
+	c.cache.Set(jwksUri, jwtPubKeyEntry{
+		pubKey:        pubkey,
+		lastCheckTime: time.Now(),
+	})
+
+	return pubkey, nil
 }
 
 // SortHTTPAPISpec sorts a slice in a stable manner.
