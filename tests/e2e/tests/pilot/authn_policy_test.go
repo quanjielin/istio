@@ -16,6 +16,7 @@ package pilot
 
 import (
 	"fmt"
+	"log"
 	"testing"
 )
 
@@ -47,6 +48,9 @@ func TestAuthNPolicy(t *testing.T) {
 						testName := fmt.Sprintf("%s->%s%s_%s", src, dst, domain, port)
 						runRetriableTest(t, testName, defaultRetryBudget, func() error {
 							reqURL := fmt.Sprintf("http://%s%s:%s/%s", dst, domain, port, src)
+
+							log.Printf("**********************TestAuthNPolicy reqURL is %q", reqURL)
+
 							resp := ClientRequest(src, reqURL, 1, "")
 							if src == "t" && (dst == "b" || (dst == "d" && port == "8080")) {
 								if len(resp.ID) == 0 {
