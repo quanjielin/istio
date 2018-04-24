@@ -70,7 +70,7 @@ var (
 	caTag        = flag.String("ca_tag", os.Getenv("TAG"), "Ca tag")
 	galleyHub    = flag.String("galley_hub", os.Getenv("HUB"), "Galley hub")
 	galleyTag    = flag.String("galley_tag", os.Getenv("TAG"), "Galley tag")
-	authEnable   = flag.Bool("auth_enable", true, "Enable auth")
+	authEnable   = flag.Bool("auth_enable", false, "Enable auth")
 	rbacEnable   = flag.Bool("rbac_enable", true, "Enable rbac")
 	localCluster = flag.Bool("use_local_cluster", false,
 		"Whether the cluster is local or not (i.e. the test is running within the cluster). If running on minikube, this should be set to true.")
