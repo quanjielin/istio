@@ -73,6 +73,7 @@ type PodInfo struct {
 	Namespace string
 	IP        string
 	AppLabel  string
+	NodeType  string
 }
 
 func (p *PodInfo) populatePodNameAndIP(kubeconfig string) bool {
@@ -115,10 +116,20 @@ func (p *PodInfo) populatePodNameAndIP(kubeconfig string) bool {
 }
 
 func (p PodInfo) makeNodeID() string {
+	//return fmt.Sprintf("sidecar~%s~%s.%s~%s.svc.cluster.local", p.IP, p.Name, p.Namespace, p.Namespace)
+	//return fmt.Sprintf("router~%s~%s.%s~%s.svc.cluster.local", p.IP, p.Name, p.Namespace, p.Namespace)
+	if p.NodeType != "" {
+		return fmt.Sprintf("%s~%s~%s.%s~%s.svc.cluster.local", p.NodeType, p.IP, p.Name, p.Namespace, p.Namespace)
+	}
 	return fmt.Sprintf("sidecar~%s~%s.%s~%s.svc.cluster.local", p.IP, p.Name, p.Namespace, p.Namespace)
 }
 
-func makeNodeID(pod, namespace, ip string) string {
+func makeNodeID(nodeType, pod, namespace, ip string) string {
+	//return fmt.Sprintf("sidecar~%s~%s.%s~%s.svc.cluster.local", ip, pod, namespace, namespace)
+	//return fmt.Sprintf("router~%s~%s.%s~%s.svc.cluster.local", ip, pod, namespace, namespace)
+	if nodeType != "" {
+		return fmt.Sprintf("%s~%s~%s.%s~%s.svc.cluster.local", nodeType, ip, pod, namespace, namespace)
+	}
 	return fmt.Sprintf("sidecar~%s~%s.%s~%s.svc.cluster.local", ip, pod, namespace, namespace)
 }
 
@@ -178,14 +189,15 @@ func resolveKubeConfigPath(kubeConfig string) string {
 }
 
 func main() {
-	podName := flag.String("pod", "", "pod name. If omit, pod name will be found from k8s registry using app label.")
+	podName := flag.String("pod", "istio-ingressgateway-7c677778d5-whmz6", "pod name. If omit, pod name will be found from k8s registry using app label.")
 	appName := flag.String("app", "", "app label. Should be set if pod name is not provided. It will be used to find "+
 		"the pod that has the same app label. Ignored if --pod is set.")
-	podIP := flag.String("ip", "", "pod IP. If omit, pod IP will be found from registry.")
-	namespace := flag.String("namespace", "default", "namespace. Default is 'default'.")
+	podIP := flag.String("ip", "10.8.0.6", "pod IP. If omit, pod IP will be found from registry.")
+	nodeType := flag.String("nodetype", "ingress", "sidecar, ingress, router. Default sidecar.")
+	namespace := flag.String("namespace", "istio-system", "namespace. Default is 'default'.")
 	kubeConfig := flag.String("kubeconfig", "~/.kube/config", "path to the kubeconfig file. Default is ~/.kube/config")
 	pilotURL := flag.String("pilot", "localhost:15010", "pilot address")
-	configType := flag.String("type", "lds", "lds, cds, rds or eds. Default lds.")
+	configType := flag.String("type", "lds", "cds, cds, rds or eds. Default lds.")
 	outputFile := flag.String("output", "", "output file. Leave blank to go to stdout")
 	flag.Parse()
 
@@ -207,6 +219,7 @@ func main() {
 		IP:        *podIP,
 		Namespace: *namespace,
 		AppLabel:  *appName,
+		NodeType:  *nodeType,
 	}
 	if !podInfo.populatePodNameAndIP(resolveKubeConfigPath(*kubeConfig)) {
 		return

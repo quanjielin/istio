@@ -24,9 +24,11 @@ import (
 
 func TestIngress(t *testing.T) {
 	if !tc.Ingress || tc.V1alpha3 {
+		log.Infof("*****************skip ingress test")
 		t.Skipf("Skipping %s: ingress=false", t.Name())
 	}
 
+	log.Infof("*****************start ingress test")
 	istioNamespace := tc.Kube.IstioSystemNamespace()
 	ingressServiceName := tc.Kube.IstioIngressService()
 

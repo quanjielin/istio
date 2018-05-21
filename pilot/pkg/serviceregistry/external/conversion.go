@@ -21,6 +21,7 @@ import (
 	meshconfig "istio.io/api/mesh/v1alpha1"
 	networking "istio.io/api/networking/v1alpha3"
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/log"
 )
 
 func convertPort(port *networking.Port) *model.Port {
@@ -33,6 +34,8 @@ func convertPort(port *networking.Port) *model.Port {
 }
 
 func convertServices(serviceEntry *networking.ServiceEntry) []*model.Service {
+	log.Infof("***********************convertServices serviceEntry %+v", *serviceEntry)
+
 	out := make([]*model.Service, 0)
 
 	var resolution model.Resolution

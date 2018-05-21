@@ -50,18 +50,24 @@ func TestEgressGateway(t *testing.T) {
 	if err := cfgs.Setup(); err != nil {
 		t.Fatal(err)
 	}
-	defer cfgs.Teardown()
+	//defer cfgs.Teardown()
 
 	runRetriableTest(t, "RouteViaEgressGateway", defaultRetryBudget, func() error {
 		// We use an arbitrary IP to ensure that the test fails if networking logic is implemented incorrectly
 		reqURL := fmt.Sprintf("http://1.1.1.1/bookinfo")
-		resp := ClientRequest("a", reqURL, 100, "-key Host -val scooby.eu.bookinfo.com")
+		resp := ClientRequest("a", reqURL, 100, "-key Host -val eu.bookinfo.com")
+
+		log.Infof("***********************resp is %+v", resp)
+		log.Infof("###################################")
+
 		count := make(map[string]int)
 		for _, elt := range resp.Host {
-			count[elt]++
+			log.Infof("***********************resp host is %+v", elt)
+			count[elt] = count[elt] + 1
 		}
 		for _, elt := range resp.Code {
-			count[elt]++
+			log.Infof("***********************resp code is %+v", elt)
+			count[elt] = count[elt] + 1
 		}
 		handledByEgress := strings.Count(resp.Body, "Handled-By-Egress-Gateway=true")
 		log.Infof("request counts %v", count)

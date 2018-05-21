@@ -39,6 +39,7 @@ func TestGateway_HTTPIngress(t *testing.T) {
 	istioNamespace := tc.Kube.IstioSystemNamespace()
 	ingressGatewayServiceName := tc.Kube.IstioIngressGatewayService()
 
+	log.Infof("**********************istioNamespace %q, ingressGatewayServiceName %q", istioNamespace, ingressGatewayServiceName)
 	// Configure a route from us.bookinfo.com to "c-v2" only
 	cfgs := &deployableConfig{
 		Namespace: tc.Kube.Namespace,
@@ -50,16 +51,24 @@ func TestGateway_HTTPIngress(t *testing.T) {
 	if err := cfgs.Setup(); err != nil {
 		t.Fatal(err)
 	}
-	defer cfgs.Teardown()
+	//defer cfgs.Teardown()
 
 	runRetriableTest(t, "VersionRouting", defaultRetryBudget, func() error {
 		reqURL := fmt.Sprintf("http://%s.%s/c", ingressGatewayServiceName, istioNamespace)
+
 		resp := ClientRequest("t", reqURL, 100, "-key Host -val uk.bookinfo.com")
+
+		log.Infof("*********************reqURL is %q, resp is %+v", reqURL, resp)
+
+		log.Infof("####################################################")
+
 		count := make(map[string]int)
 		for _, elt := range resp.Version {
+			log.Infof("************************elt is %+v", elt)
 			count[elt] = count[elt] + 1
 		}
-		log.Infof("request counts %v", count)
+		log.Infof("#####################request counts %v", count)
+
 		if count["v2"] >= 95 {
 			return nil
 		}

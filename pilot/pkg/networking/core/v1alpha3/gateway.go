@@ -49,6 +49,7 @@ var (
 // then refactor all the methods to hang off that type, remove the redundant "Gateway" in all the method names
 
 func (configgen *ConfigGeneratorImpl) buildGatewayListeners(env model.Environment, node model.Proxy) ([]*xdsapi.Listener, error) {
+	log.Infof("*********************buildGatewayListeners node %+v", node)
 	// collect workload labels
 	workloadInstances, err := env.GetProxyServiceInstances(&node)
 	if err != nil {
@@ -58,21 +59,28 @@ func (configgen *ConfigGeneratorImpl) buildGatewayListeners(env model.Environmen
 
 	var workloadLabels model.LabelsCollection
 	for _, w := range workloadInstances {
+		log.Infof("********************workloadInstance %+v", w)
 		workloadLabels = append(workloadLabels, w.Labels)
 	}
 
+	log.Infof("***********************workloadLabels %+v", workloadLabels)
+
 	gateways := env.Gateways(workloadLabels)
 	if len(gateways) == 0 {
-		log.Debuga("no gateways for router", node.ID)
+		log.Infof("no gateways for router", node.ID)
 		return []*xdsapi.Listener{}, nil
 	}
 
+	log.Infof("*********************buildGatewayListeners gateways %+v", gateways)
+
 	merged := model.MergeGateways(gateways...)
-	log.Debugf("buildGatewayListeners: gateways after merging: %v", merged)
+	log.Infof("*************buildGatewayListeners: gateways after merging: %+v, mergedServers %+v", merged, merged.Servers)
 
 	errs := &multierror.Error{}
 	listeners := make([]*xdsapi.Listener, 0, len(merged.Servers))
 	for portNumber, servers := range merged.Servers {
+		log.Infof("*************portNumber %+v, mergedServers %+v", portNumber, servers)
+
 		// TODO: this works because all Servers on the same port use the same protocol due to model.MergeGateways's implementation.
 		// When Envoy supports filter chain matching, we'll have to group the ports by number and protocol, so this logic will
 		// no longer work.
@@ -121,6 +129,8 @@ func (configgen *ConfigGeneratorImpl) buildGatewayListeners(env model.Environmen
 			// this is for.
 			FilterChains: make([]plugin.FilterChain, len(l.FilterChains)),
 		}
+
+		log.Infof("+++++++++++++++++++++++++++++++++filter chain len is %d", len(l.FilterChains))
 		for _, p := range configgen.Plugins {
 			params := &plugin.InputParams{
 				ListenerType:   listenerType,
@@ -139,9 +149,13 @@ func (configgen *ConfigGeneratorImpl) buildGatewayListeners(env model.Environmen
 			continue
 		}
 		if log.DebugEnabled() {
-			log.Debugf("buildGatewayListeners: constructed listener with %d filter chains:\n%v",
+			log.Debugf("buildGatewayListeners: constructed listener with %d filter chains:\n%+v",
 				len(mutable.Listener.FilterChains), mutable.Listener)
 		}
+
+		log.Infof("*********************buildGatewayListeners: constructed listener with %d filter chains:\n%+v",
+			len(mutable.Listener.FilterChains), mutable.Listener)
+
 		listeners = append(listeners, mutable.Listener)
 	}
 	// We'll try to return any listeners we successfully marshaled; if we have none, we'll emit the error we built up
@@ -168,11 +182,13 @@ func createGatewayHTTPFilterChainOpts(
 
 	nameToServiceMap := make(map[model.Hostname]*model.Service, len(services))
 	for _, svc := range services {
+		log.Infof("**********************createGatewayHTTPFilterChainOpts svc %+v", svc)
 		nameToServiceMap[svc.Hostname] = svc
 	}
 
 	httpListeners := make([]*filterChainOpts, 0, len(servers))
 	for i, server := range servers {
+		log.Infof("++++++++++++++++++++++++++++createGatewayHTTPFilterChainOpts server %+v", server)
 		routeCfg := buildGatewayInboundHTTPRouteConfig(env, nameToServiceMap, gatewayNames, server)
 		if routeCfg == nil {
 			log.Debugf("omitting HTTP listeners for port %d filter chain %d due to no routes", server.Port, i)
@@ -263,9 +279,12 @@ func buildGatewayInboundHTTPRouteConfig(
 	port := int(server.Port.Number)
 	// TODO: WE DO NOT SUPPORT two gateways on same workload binding to same virtual service
 	virtualServices := env.VirtualServices(gateways)
+	log.Infof("**********************buildGatewayInboundHTTPRouteConfig gateways %+v, gateways %+v", virtualServices, gateways)
+
 	virtualHosts := make([]route.VirtualHost, 0, len(virtualServices))
 	for _, v := range virtualServices {
 		vs := v.Spec.(*networking.VirtualService)
+		log.Infof("**********************buildGatewayInboundHTTPRouteConfig vs.Hosts %+v, hosts %+v", vs.Hosts, hosts)
 		if !hostMatch(vs.Hosts, hosts) {
 			log.Debugf("omitting virtual service %q because its hosts don't match gateways %v server %d", v.Name, gateways, port)
 			continue
@@ -283,6 +302,7 @@ func buildGatewayInboundHTTPRouteConfig(
 			Domains: domains,
 			Routes:  routes,
 		}
+		log.Infof("**********************buildGatewayInboundHTTPRouteConfig host %+v", host)
 		virtualHosts = append(virtualHosts, host)
 	}
 
@@ -301,6 +321,7 @@ func buildGatewayInboundHTTPRouteConfig(
 func createGatewayTCPFilterChainOpts(
 	env model.Environment, servers []*networking.Server, gatewayNames map[string]bool) []*filterChainOpts {
 
+	log.Infof("--------------------------createGatewayTCPFilterChainOpts server %+v", servers)
 	opts := make([]*filterChainOpts, 0, len(servers))
 	for _, server := range servers {
 		opts = append(opts, &filterChainOpts{
@@ -351,9 +372,11 @@ func filterTCPDownstreams(env model.Environment, server *networking.Server, gate
 	}
 
 	virtualServices := env.VirtualServices(gateways)
+	log.Infof("------------------------filterTCPDownstreams virtualServices %+v", virtualServices)
 	downstreams := make([]*networking.Destination, 0, len(virtualServices))
 	for _, spec := range virtualServices {
 		vsvc := spec.Spec.(*networking.VirtualService)
+		log.Infof("------------------------filterTCPDownstreams vsvc %+v, hosts %+v, vsvc.Tcp %+v", vsvc, hosts, vsvc.Tcp)
 		if !hostMatch(vsvc.Hosts, hosts) {
 			// the VirtualService's hosts don't include hosts advertised by server
 			continue
@@ -366,6 +389,8 @@ func filterTCPDownstreams(env model.Environment, server *networking.Server, gate
 			}
 		}
 	}
+
+	log.Infof("------------------------filterTCPDownstreams downstreams %+v", downstreams)
 	return downstreams
 }
 
