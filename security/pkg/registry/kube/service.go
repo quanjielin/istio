@@ -78,6 +78,7 @@ func (c *ServiceController) Run(stopCh chan struct{}) {
 
 func (c *ServiceController) serviceAdded(obj interface{}) {
 	svc := obj.(*v1.Service)
+	log.Infof("*********************serviceAdded service %+v", svc)
 	svcAcct, ok := svc.ObjectMeta.Annotations[kube.KubeServiceAccountsOnVMAnnotation]
 	if ok {
 		err := c.reg.AddMapping(svcAcct, svcAcct)

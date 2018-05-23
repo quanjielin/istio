@@ -82,6 +82,7 @@ func getSpiffeID(sa *v1.ServiceAccount) string {
 func (c *ServiceAccountController) serviceAccountAdded(obj interface{}) {
 	sa := obj.(*v1.ServiceAccount)
 	id := getSpiffeID(sa)
+	log.Infof("*************************serviceAccountAdded spiffeID %q", id)
 	err := c.reg.AddMapping(id, id)
 	if err != nil {
 		log.Errorf("cannot add mapping %q -> %q to registry: %s", id, id, err.Error())

@@ -63,7 +63,7 @@ func (reg *IdentityRegistry) AddMapping(id1, id2 string) error {
 		return fmt.Errorf("identity %q is already mapped to %q", id1, oldID)
 	}
 
-	log.Infof("adding registry entry %q -> %q", id1, id2)
+	log.Infof("******************adding registry entry %q -> %q", id1, id2)
 	reg.Map[id1] = id2
 	return nil
 }
@@ -78,7 +78,7 @@ func (reg *IdentityRegistry) DeleteMapping(id1, id2 string) error {
 		return fmt.Errorf("could not delete nonexistent mapping: %q -> %q", id1, id2)
 	}
 
-	log.Infof("deleting registry entry %q -> %q", id1, id2)
+	log.Infof("******************adeleting registry entry %q -> %q", id1, id2)
 	delete(reg.Map, id1)
 	return nil
 }

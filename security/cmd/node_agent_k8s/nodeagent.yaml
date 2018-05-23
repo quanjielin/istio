@@ -19,10 +19,8 @@ spec:
           mountPath: /host/driver
       containers:
       - name: nodeagent
-        image: gcr.io/istio-testing/nodeagent:latest
+        image: docker.io/quanlin/node-agent-k8s:180523-1623
         imagePullPolicy: IfNotPresent
-        command: ["/main"]
-        args: ["--ca-address=istio-citadel.istio-system.svc.cluster.local:8060"]
         volumeMounts:
         - name: test-mgmt
           mountPath: /tmp/udsuspver

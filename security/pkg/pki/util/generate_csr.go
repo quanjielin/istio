@@ -25,6 +25,8 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"fmt"
+
+	"istio.io/istio/pkg/log"
 )
 
 // GenCSR generates a X.509 certificate sign request and private key with the given options.
@@ -39,6 +41,7 @@ func GenCSR(options CertOptions) ([]byte, []byte, error) {
 		return nil, nil, fmt.Errorf("CSR template creation failed (%v)", err)
 	}
 
+	log.Infof("********************************GenCSR priv %+v, template %+v", priv, template)
 	csrBytes, err := x509.CreateCertificateRequest(rand.Reader, template, crypto.PrivateKey(priv))
 	if err != nil {
 		return nil, nil, fmt.Errorf("CSR creation failed (%v)", err)

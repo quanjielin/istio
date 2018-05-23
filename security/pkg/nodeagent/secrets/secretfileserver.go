@@ -20,6 +20,7 @@ import (
 	"os"
 	"path"
 
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/security/pkg/pki/util"
 )
 
@@ -39,6 +40,15 @@ type SecretFileServer struct {
 // Put writes the specified key and cert to the files.
 func (sf *SecretFileServer) Put(serviceAccount string, keycert util.KeyCertBundle) error {
 	_, priv, cert, root := keycert.GetAllPem()
+
+	log.Infof("************SecretFileServer rootDir %q, serviceAccount %q", sf.rootDir, serviceAccount)
+
+	if _, err := os.Stat(sf.rootDir); os.IsNotExist(err) {
+		if err := os.Mkdir(sf.rootDir, 0700); err != nil {
+			return fmt.Errorf("failed to create directory %q, err %v", sf.rootDir, err)
+		}
+	}
+
 	dir := path.Join(sf.rootDir, serviceAccount)
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		if err := os.Mkdir(dir, 0700); err != nil {

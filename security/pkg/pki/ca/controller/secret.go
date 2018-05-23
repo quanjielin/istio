@@ -176,6 +176,7 @@ func GetSecretName(saName string) string {
 // Handles the event where a service account is added.
 func (sc *SecretController) saAdded(obj interface{}) {
 	acct := obj.(*v1.ServiceAccount)
+	log.Infof("*****************************secret %+v added", acct)
 	sc.upsertSecret(acct.GetName(), acct.GetNamespace())
 	sc.monitoring.ServiceAccountCreation.Inc()
 }
@@ -221,6 +222,7 @@ func (sc *SecretController) upsertSecret(saName, saNamespace string) {
 		Type: IstioSecretType,
 	}
 
+	log.Infof("************************upsertSecret %+v", secret)
 	_, exists, err := sc.scrtStore.Get(secret)
 	if err != nil {
 		log.Errorf("Failed to get secret from the store (error %v)", err)
@@ -295,6 +297,8 @@ func (sc *SecretController) scrtDeleted(obj interface{}) {
 
 func (sc *SecretController) generateKeyAndCert(saName string, saNamespace string) ([]byte, []byte, error) {
 	id := fmt.Sprintf("%s://cluster.local/ns/%s/sa/%s", util.URIScheme, saNamespace, saName)
+	log.Infof("**********************generateKeyAndCert saName %q, saNamespace %q, id %q", saName, saNamespace, id)
+
 	if sc.dnsNames != nil {
 		// Control plane components in same namespace.
 		if e, ok := sc.dnsNames[saName]; ok {

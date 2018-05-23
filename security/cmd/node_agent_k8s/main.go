@@ -82,7 +82,7 @@ func init() {
 
 	flags.StringVar(&cAClientConfig.Env, "env", "unspecified",
 		"Node Environment : unspecified | onprem | gcp | aws")
-	flags.StringVar(&cAClientConfig.Platform, "platform", "vm", "The platform istio runs on: vm | k8s")
+	flags.StringVar(&cAClientConfig.Platform, "platform", "k8s", "The platform istio runs on: vm | k8s")
 
 	flags.StringVar(&cAClientConfig.CertChainFile, "cert-chain",
 		"/etc/certs/cert-chain.pem", "Node Agent identity cert file")
