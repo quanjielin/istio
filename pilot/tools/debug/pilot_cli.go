@@ -53,13 +53,17 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	ads "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	sds "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"google.golang.org/grpc"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -175,6 +179,15 @@ func makeEDSRequest(resources string) *xdsapi.DiscoveryRequest {
 	}
 }
 
+func makeSDSRequest(resources string) *xdsapi.DiscoveryRequest {
+	return &xdsapi.DiscoveryRequest{
+		ResourceNames: strings.Split(resources, "name,test"),
+		Node: &core.Node{
+			Id: "sidecar~127.0.0.1~id~local",
+		},
+	}
+}
+
 func edsRequest(pilotURL string, req *xdsapi.DiscoveryRequest) *xdsapi.DiscoveryResponse {
 	conn, err := grpc.Dial(pilotURL, grpc.WithInsecure())
 	if err != nil {
@@ -184,6 +197,39 @@ func edsRequest(pilotURL string, req *xdsapi.DiscoveryRequest) *xdsapi.Discovery
 
 	adsClient := xdsapi.NewEndpointDiscoveryServiceClient(conn)
 	stream, err := adsClient.StreamEndpoints(context.Background())
+	if err != nil {
+		panic(err.Error())
+	}
+	err = stream.Send(req)
+	if err != nil {
+		panic(err.Error())
+	}
+	res, err := stream.Recv()
+	if err != nil {
+		panic(err.Error())
+	}
+	return res
+}
+
+// unixDialer connect a target with specified timeout.
+func unixDialer(socket string, timeout time.Duration) (net.Conn, error) {
+	return net.DialTimeout("unix", socket, timeout)
+}
+
+func sdsRequest(socket string, req *xdsapi.DiscoveryRequest) *xdsapi.DiscoveryResponse {
+	var opts []grpc.DialOption
+
+	opts = append(opts, grpc.WithInsecure())
+	opts = append(opts, grpc.WithDialer(unixDialer))
+
+	conn, err := grpc.Dial(socket, opts...)
+	if err != nil {
+		panic(err.Error())
+	}
+	defer conn.Close()
+
+	sdsClient := sds.NewSecretDiscoveryServiceClient(conn)
+	stream, err := sdsClient.StreamSecrets(context.Background())
 	if err != nil {
 		panic(err.Error())
 	}
@@ -210,7 +256,8 @@ func resolveKubeConfigPath(kubeConfig string) string {
 func main() {
 	kubeConfig := flag.String("kubeconfig", "~/.kube/config", "path to the kubeconfig file. Default is ~/.kube/config")
 	pilotURL := flag.String("pilot", "localhost:15010", "pilot address")
-	configType := flag.String("type", "lds", "lds, cds, or eds. Default lds.")
+	sdsSocket := flag.String("socket", "/tmp/gotest4.sock", "SDS socket")
+	configType := flag.String("type", "sds", "lds, cds, or eds. Default lds.")
 	resources := flag.String("res", "", "Resource(s) to get config for. Should be pod name or app label for lds and cds type. For eds, it is comma separated list of cluster name.")
 	outputFile := flag.String("out", "", "output file. Leave blank to go to stdout")
 	flag.Parse()
@@ -221,6 +268,8 @@ func main() {
 		resp = pod.getResource(*pilotURL, *configType)
 	} else if *configType == "eds" {
 		resp = edsRequest(*pilotURL, makeEDSRequest(*resources))
+	} else if *configType == "sds" {
+		resp = sdsRequest(*sdsSocket, makeSDSRequest(*resources))
 	} else {
 		log.Errorf("Unknown config type: %q", *configType)
 		os.Exit(1)
