@@ -444,7 +444,11 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings) 
 		}
 	case networking.TLSSettings_MUTUAL, networking.TLSSettings_ISTIO_MUTUAL:
 		cluster.TlsContext = &auth.UpstreamTlsContext{
-			CommonTlsContext: &auth.CommonTlsContext{
+			Sni: tls.Sni,
+		}
+		//if model.DefaultMeshConfig().EnableTracing {
+		if true {
+			cluster.TlsContext.CommonTlsContext = &auth.CommonTlsContext{
 				TlsCertificates: []*auth.TlsCertificate{
 					{
 						CertificateChain: &core.DataSource{
@@ -462,8 +466,34 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings) 
 				ValidationContextType: &auth.CommonTlsContext_ValidationContext{
 					ValidationContext: certValidationContext,
 				},
-			},
-			Sni: tls.Sni,
+			}
+		} else {
+			refreshDelay := time.Second * 60
+			udsPath := ""
+			cluster.TlsContext.CommonTlsContext = &auth.CommonTlsContext{
+				TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+					{
+						Name: tls.SubjectAltNames[0],
+						SdsConfig: &core.ConfigSource{
+							ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+								ApiConfigSource: &core.ApiConfigSource{
+									ApiType: core.ApiConfigSource_GRPC,
+									GrpcServices: []*core.GrpcService{
+										{
+											TargetSpecifier: &core.GrpcService_GoogleGrpc_{
+												GoogleGrpc: &core.GrpcService_GoogleGrpc{
+													TargetUri: udsPath,
+												},
+											},
+										},
+									},
+									RefreshDelay: &refreshDelay,
+								},
+							},
+						},
+					},
+				},
+			}
 		}
 		if cluster.Http2ProtocolOptions != nil {
 			// This is HTTP/2 in-mesh cluster, advertise it with ALPN.

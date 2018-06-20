@@ -17,6 +17,7 @@ package authn
 import (
 	"crypto/sha1"
 	"fmt"
+	"time"
 
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -236,10 +237,17 @@ func BuildAuthNFilter(policy *authn.Policy) *http_conn.HttpFilter {
 }
 
 // buildSidecarListenerTLSContext adds TLS to the listener if the policy requires one.
-func buildSidecarListenerTLSContext(authenticationPolicy *authn.Policy) *auth.DownstreamTlsContext {
+func buildSidecarListenerTLSContext(authenticationPolicy *authn.Policy, serviceAccount string) *auth.DownstreamTlsContext {
 	if requireTLS, mTLSParams := RequireTLS(authenticationPolicy); requireTLS {
-		return &auth.DownstreamTlsContext{
-			CommonTlsContext: &auth.CommonTlsContext{
+		ret := &auth.DownstreamTlsContext{
+			RequireClientCertificate: &types.BoolValue{
+				Value: !(mTLSParams != nil && mTLSParams.AllowTls),
+			},
+		}
+
+		//if model.DefaultMeshConfig().EnableTracing {
+		if true {
+			ret.CommonTlsContext = &auth.CommonTlsContext{
 				TlsCertificates: []*auth.TlsCertificate{
 					{
 						CertificateChain: &core.DataSource{
@@ -265,12 +273,38 @@ func buildSidecarListenerTLSContext(authenticationPolicy *authn.Policy) *auth.Do
 				},
 				// Same as ListenersALPNProtocols defined in listener. Need to move that constant else where in order to share.
 				AlpnProtocols: []string{"h2", "http/1.1"},
-			},
-			RequireClientCertificate: &types.BoolValue{
-				Value: !(mTLSParams != nil && mTLSParams.AllowTls),
-			},
+			}
+		} else {
+			refreshDelay := time.Second * 60
+			udsPath := ""
+			ret.CommonTlsContext = &auth.CommonTlsContext{
+				TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
+					{
+						Name: serviceAccount,
+						SdsConfig: &core.ConfigSource{
+							ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+								ApiConfigSource: &core.ApiConfigSource{
+									ApiType: core.ApiConfigSource_GRPC,
+									GrpcServices: []*core.GrpcService{
+										{
+											TargetSpecifier: &core.GrpcService_GoogleGrpc_{
+												GoogleGrpc: &core.GrpcService_GoogleGrpc{
+													TargetUri: udsPath,
+												},
+											},
+										},
+									},
+									RefreshDelay: &refreshDelay,
+								},
+							},
+						},
+					},
+				},
+			}
 		}
+		return ret
 	}
+
 	return nil
 }
 
@@ -297,7 +331,7 @@ func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableO
 	}
 
 	for i := range mutable.Listener.FilterChains {
-		mutable.Listener.FilterChains[i].TlsContext = buildSidecarListenerTLSContext(authnPolicy)
+		mutable.Listener.FilterChains[i].TlsContext = buildSidecarListenerTLSContext(authnPolicy, in.ServiceInstance.ServiceAccount)
 		if in.ListenerType == plugin.ListenerTypeHTTP {
 			// Adding Jwt filter and authn filter, if needed.
 			if filter := BuildJwtFilter(authnPolicy); filter != nil {
