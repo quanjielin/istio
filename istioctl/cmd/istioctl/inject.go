@@ -256,12 +256,13 @@ istioctl kube-inject -f deployment.yaml -o deployment-injected.yaml --injectConf
 			// so must be specified together. hub and tag no longer have defaults.
 			if hub != "" || tag != "" {
 				// ISTIOCTL_USE_BUILTIN_DEFAULTS is used to have legacy behaviour.
-				if !getBoolEnv("ISTIOCTL_USE_BUILTIN_DEFAULTS", false) {
-					return errors.New("one of injectConfigFile or injectConfigMapName is required\n" +
-						"use the following command to get the current injector file\n" +
-						"kubectl -n istio-system get configmap istio-sidecar-injector " +
-						"-o=jsonpath='{.data.config}' > /tmp/injectConfigFile.yaml")
-				}
+				/*
+					if !getBoolEnv("ISTIOCTL_USE_BUILTIN_DEFAULTS", false) {
+						return errors.New("one of injectConfigFile or injectConfigMapName is required\n" +
+							"use the following command to get the current injector file\n" +
+							"kubectl -n istio-system get configmap istio-sidecar-injector " +
+							"-o=jsonpath='{.data.config}' > /tmp/injectConfigFile.yaml")
+					}*/
 
 				if hub == "" || tag == "" {
 					return fmt.Errorf("hub and tag are both required. got hub: '%v', tag: '%v'", hub, tag)
@@ -382,11 +383,12 @@ func init() {
 			"are excluded.")
 	injectCmd.PersistentFlags().BoolVar(&debugMode, "debug", false, "Use debug images and settings for the sidecar")
 
-	deprecatedFlags := []string{"coreDump", "imagePullPolicy", "includeIPRanges", "excludeIPRanges", "hub", "tag",
-		"includeInboundPorts", "excludeInboundPorts", "debug", "verbosity", "sidecarProxyUID", "setVersionString"}
-	for _, opt := range deprecatedFlags {
-		_ = injectCmd.PersistentFlags().MarkDeprecated(opt, "Use --injectConfigMapName or --injectConfigFile instead")
-	}
+	/*
+		deprecatedFlags := []string{"coreDump", "imagePullPolicy", "includeIPRanges", "excludeIPRanges", "hub", "tag",
+			"includeInboundPorts", "excludeInboundPorts", "debug", "verbosity", "sidecarProxyUID", "setVersionString"}
+		for _, opt := range deprecatedFlags {
+			_ = injectCmd.PersistentFlags().MarkDeprecated(opt, "Use --injectConfigMapName or --injectConfigFile instead")
+		}*/
 
 	injectCmd.PersistentFlags().StringVar(&meshConfigMapName, "meshConfigMapName", defaultMeshConfigMapName,
 		fmt.Sprintf("ConfigMap name for Istio mesh configuration, key should be %q", configMapKey))

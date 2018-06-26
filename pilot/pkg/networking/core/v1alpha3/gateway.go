@@ -116,6 +116,7 @@ func (configgen *ConfigGeneratorImpl) buildGatewayListeners(env model.Environmen
 			}
 		}
 
+		log.Infof("*********************Gateway buildGatewayListeners port %d, serviceInstance %+v, servers %+v", portNumber, si, servers)
 		for _, p := range configgen.Plugins {
 			params := &plugin.InputParams{
 				ListenerProtocol: listenerType,
