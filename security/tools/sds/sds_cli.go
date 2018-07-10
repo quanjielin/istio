@@ -79,7 +79,8 @@ func sdsRequest(socket, sdsCert string, req *xdsapi.DiscoveryRequest) *xdsapi.Di
 
 func main() {
 	sdsSocket := flag.String("socket", "/tmp/sdsuds.sock", "SDS socket")
-	sdsCertFile := flag.String("certFile", "./../../docker/nodeagent-sds-cert.pem", "cert file used to send secure gRPC request to SDS server")
+	//sdsCertFile := flag.String("certFile", "./../../docker/nodeagent-sds-cert.pem", "cert file used to send secure gRPC request to SDS server")
+	sdsCertFile := flag.String("certFile", "", "cert file used to send secure gRPC request to SDS server")
 	outputFile := flag.String("out", "", "output file. Leave blank to go to stdout")
 	flag.Parse()
 
