@@ -15,6 +15,7 @@
 package sds
 
 import (
+	"fmt"
 	"net"
 
 	"google.golang.org/grpc"
@@ -47,6 +48,9 @@ func NewServer(options Options, st SecretManager) (*Server, error) {
 		log.Errorf("Failed to initialize secret discovery service: %v", err)
 		return nil, err
 	}
+
+	log.Infof("*******SDS gRPC server start, listen %q \n", options.UDSPath)
+	fmt.Printf("++++++++SDS gRPC server start, listen %q \n", options.UDSPath)
 	return s, nil
 }
 

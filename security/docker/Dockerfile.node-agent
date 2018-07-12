@@ -4,4 +4,4 @@ FROM scratch
 WORKDIR /tmp/
 ADD node_agent /usr/local/bin/node_agent
 
-ENTRYPOINT [ "/usr/local/bin/node_agent"]
+CMD [ "/usr/local/bin/node_agent"]

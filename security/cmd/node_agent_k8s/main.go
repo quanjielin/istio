@@ -57,7 +57,7 @@ var (
 
 func init() {
 	RootCmd.PersistentFlags().StringVar(&serverOptions.UDSPath, "sdsUdsPath",
-		"/tmp/sdsuds.sock", "Unix domain socket through which SDS server communicates with proxies")
+		"/tmp/uds_path", "Unix domain socket through which SDS server communicates with proxies")
 
 	RootCmd.PersistentFlags().DurationVar(&cacheOptions.SecretTTL, "secretTtl",
 		time.Hour, "Secret's TTL")
