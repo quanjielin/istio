@@ -15,3 +15,10 @@ spec:
       - name: nodeagent
         image: "docker.io/quanlin/node-agent-k8s:180712-1102"
         imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /tmp
+          name: sdsudspath
+      volumes:
+      - name: sdsudspath
+        hostPath:
+          path: /tmp/sds

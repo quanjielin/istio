@@ -86,6 +86,7 @@ func (s *Server) initDiscoveryService(options *Options, st SecretManager) error 
 		}
 
 		log.Info("SDS grpc server started")
+		fmt.Printf("SDS grpc server started")
 	}()
 
 	return nil
