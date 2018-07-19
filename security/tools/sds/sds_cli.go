@@ -68,7 +68,8 @@ func sdsRequest(socket string, req *xdsapi.DiscoveryRequest) *xdsapi.DiscoveryRe
 }
 
 func main() {
-	sdsSocket := flag.String("socket", "/tmp/uds_path", "SDS socket")
+	sdsSocket := flag.String("socket", "/var/run/sds/uds_path", "SDS socket")
+	//sdsSocket := flag.String("socket", "/tmp/uds_path", "SDS socket")
 	outputFile := flag.String("out", "", "output file. Leave blank to go to stdout")
 	flag.Parse()
 

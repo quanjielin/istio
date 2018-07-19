@@ -88,6 +88,7 @@ func NewSecretCache(cl ca.Client, options Options) *SecretCache {
 // Since credential passing from client may change, regenerate secret every time
 // instread of reading from cache.
 func (sc *SecretCache) GetSecret(ctx context.Context, proxyID, spiffeID, token string) (*sds.SecretItem, error) {
+	log.Infof("****************GetSecret is called")
 	ns, err := sc.generateSecret(ctx, token, spiffeID, time.Now())
 	if err != nil {
 		log.Errorf("Failed to generate secret for proxy %q: %v", proxyID, err)

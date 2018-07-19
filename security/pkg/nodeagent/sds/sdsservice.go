@@ -211,12 +211,14 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 	ctx := stream.Context()
 
 	// quanlin - localtest
-	/*
-		token, err := getCredentialToken(ctx)
-		if err != nil {
-			return err
-		}*/
-	token := "fakeToken"
+
+	token, err := getCredentialToken(ctx)
+	if err != nil {
+		log.Errorf("********getCredentialToken error: %v", err)
+		return err
+	}
+	log.Infof("********************token is %q", token)
+	//token := "fakeToken"
 
 	peerAddr := "Unknown peer address"
 	peerInfo, ok := peer.FromContext(ctx)
@@ -315,6 +317,7 @@ func NotifyProxy(proxyID string, secret *SecretItem) error {
 }
 
 func parseDiscoveryRequest(discReq *xdsapi.DiscoveryRequest) (string /*spiffeID*/, error) {
+	log.Infof("****************parseDiscoveryRequest req %+v", *discReq)
 	if discReq.Node.Id == "" {
 		return "", fmt.Errorf("discovery request %+v missing node id", discReq)
 	}
@@ -331,6 +334,7 @@ func getCredentialToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("unable to get metadata from incoming context")
 	}
 
+	log.Infof("****************metadata is %+v", metadata)
 	if h, ok := metadata[CredentialTokenHeaderKey]; ok {
 		if len(h) != 1 {
 			return "", fmt.Errorf("credential token must have 1 value in gRPC metadata but got %d", len(h))
