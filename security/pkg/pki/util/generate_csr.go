@@ -50,9 +50,11 @@ func GenCSR(options CertOptions) ([]byte, []byte, error) {
 
 // GenCSRTemplate generates a certificateRequest template with the given options.
 func GenCSRTemplate(options CertOptions) (*x509.CertificateRequest, error) {
+	fmt.Printf("*********************host is %q", options.Host)
 	template := &x509.CertificateRequest{
 		Subject: pkix.Name{
 			Organization: []string{options.Org},
+			CommonName:   options.Host,
 		},
 	}
 

@@ -19,6 +19,7 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"istio.io/istio/pkg/log"
 )
@@ -29,6 +30,12 @@ const maxStreams = 100000
 type Options struct {
 	// UDSPath is the unix domain socket through which SDS server communicates with proxies.
 	UDSPath string
+
+	// CertFile is the path of Cert File for gRPC server TLS settings.
+	CertFile string
+
+	// KeyFile is the path of Key File for gRPC server TLS settings.
+	KeyFile string
 }
 
 // Server is the gPRC server that exposes SDS through UDS.
@@ -93,7 +100,18 @@ func (s *Server) initDiscoveryService(options *Options, st SecretManager) error 
 }
 
 func (s *Server) grpcServerOptions(options *Options) []grpc.ServerOption {
-	return []grpc.ServerOption{
+	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(uint32(maxStreams)),
 	}
+
+	if options.CertFile != "" && options.KeyFile != "" {
+		creds, err := credentials.NewServerTLSFromFile(options.CertFile, options.KeyFile)
+		if err != nil {
+			log.Errorf("Failed to load TLS keys: %s", err)
+			return nil
+		}
+		grpcOptions = append(grpcOptions, grpc.Creds(creds))
+	}
+
+	return grpcOptions
 }

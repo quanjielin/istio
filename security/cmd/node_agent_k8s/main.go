@@ -56,11 +56,21 @@ var (
 )
 
 func init() {
-	RootCmd.PersistentFlags().StringVar(&serverOptions.UDSPath, "sdsUdsPath",
-		"/var/run/sds/uds_path", "Unix domain socket through which SDS server communicates with proxies")
 	/*
 		RootCmd.PersistentFlags().StringVar(&serverOptions.UDSPath, "sdsUdsPath",
-			"/tmp/uds_path", "Unix domain socket through which SDS server communicates with proxies")*/
+			"/tmp/uds_path", "Unix domain socket through which SDS server communicates with proxies")
+		RootCmd.PersistentFlags().StringVar(&serverOptions.CertFile, "sdsCertFile", "/usr/local/google/home/quanlin/testcerts/nodeagent-sds-cert.pem", "SDS gRPC TLS server-side certificate")
+		RootCmd.PersistentFlags().StringVar(&serverOptions.KeyFile, "sdsKeyFile", "/usr/local/google/home/quanlin/testcerts/nodeagent-sds-key.pem", "SDS gRPC TLS server-side key")*/
+
+	RootCmd.PersistentFlags().StringVar(&serverOptions.UDSPath, "sdsUdsPath",
+		"/var/run/sds/uds_path", "Unix domain socket through which SDS server communicates with proxies")
+
+	RootCmd.PersistentFlags().StringVar(&serverOptions.CertFile, "sdsCertFile", "/etc/istio/nodeagent-sds-cert.pem", "SDS gRPC TLS server-side certificate")
+	RootCmd.PersistentFlags().StringVar(&serverOptions.KeyFile, "sdsKeyFile", "/etc/istio/nodeagent-sds-key.pem", "SDS gRPC TLS server-side key")
+
+	/*
+		RootCmd.PersistentFlags().StringVar(&serverOptions.CertFile, "sdsCertFile", "", "SDS gRPC TLS server-side certificate")
+		RootCmd.PersistentFlags().StringVar(&serverOptions.KeyFile, "sdsKeyFile", "", "SDS gRPC TLS server-side key")*/
 
 	RootCmd.PersistentFlags().DurationVar(&cacheOptions.SecretTTL, "secretTtl",
 		time.Hour, "Secret's TTL")
