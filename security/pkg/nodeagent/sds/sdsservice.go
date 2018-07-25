@@ -102,6 +102,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 		log.Errorf("Failed to get credential token: %v", err)
 		return err
 	}
+	log.Infof("****************StreamSecrets got token %q", token)
 
 	var receiveError error
 	reqChannel := make(chan *xdsapi.DiscoveryRequest, 1)
@@ -113,6 +114,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 		// Block until a request is received.
 		select {
 		case discReq, ok := <-reqChannel:
+			log.Infof("*****StreamSecrets reqChannel")
 			if !ok {
 				// Remote side closed connection.
 				return receiveError
@@ -140,9 +142,11 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 				return err
 			}
 		case <-con.pushChannel:
+			log.Infof("*****StreamSecrets pushChannel conn is %+v", *con)
 			if con.secret == nil {
 				// Secret is nil indicates close streaming connection to proxy, so that proxy
 				// could connect again with updated token.
+				log.Infof("-----streaming connection with %q closed", con.proxyID)
 				return fmt.Errorf("streaming connection with %q closed", con.proxyID)
 			}
 
@@ -186,6 +190,7 @@ func NotifyProxy(proxyID string, secret *SecretItem) error {
 	}
 	conn.secret = secret
 
+	log.Infof("***********NotifyProxy conn is %+v", *conn)
 	conn.pushChannel <- &sdsEvent{}
 	return nil
 }

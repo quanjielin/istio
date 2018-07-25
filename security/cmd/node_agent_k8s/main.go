@@ -21,10 +21,12 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"google.golang.org/grpc/metadata"
 
 	"istio.io/istio/pkg/cmd"
 	"istio.io/istio/security/pkg/nodeagent/cache"
 	"istio.io/istio/security/pkg/nodeagent/sds"
+	capb "istio.io/istio/security/proto/ca/v1alpha1"
 )
 
 var (
@@ -57,8 +59,12 @@ var (
 )
 
 func init() {
+
 	RootCmd.PersistentFlags().StringVar(&serverOptions.UDSPath, "sdsUdsPath",
 		"/var/run/sds/uds_path", "Unix domain socket through which SDS server communicates with proxies")
+	/*
+		RootCmd.PersistentFlags().StringVar(&serverOptions.UDSPath, "sdsUdsPath",
+			"/tmp/uds_path", "Unix domain socket through which SDS server communicates with proxies")*/
 
 	//local test through TLS using '/etc/istio/nodeagent-sds-cert.pem' and '/etc/istio/nodeagent-sds-key.pem'
 	RootCmd.PersistentFlags().StringVar(&serverOptions.CertFile, "sdsCertFile", "", "SDS gRPC TLS server-side certificate")
@@ -84,5 +90,18 @@ type mockCAClient struct {
 
 func (c *mockCAClient) CSRSign(ctx context.Context, csrPEM []byte, subjectID string,
 	certValidTTLInSec int64) ([]byte /*PEM-encoded certificate chain*/, error) {
+	req := &capb.IstioCertificateRequest{
+		Csr:              string(csrPEM),
+		SubjectId:        subjectID,
+		ValidityDuration: certValidTTLInSec,
+	}
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", fmt.Sprintf("Bearer %s", subjectID)))
+	log.Printf("*****request to CA is %+v \n", *req)
+	log.Printf("*****request.Csr to CA is %+v \n", req.Csr)
+	log.Printf("*****request.SubjectId to CA is %+v \n", req.SubjectId)
+	log.Printf("*****request.ValidityDuration to CA is %+v \n", req.ValidityDuration)
+	log.Printf("*****ctx to CA is %+v \n", ctx)
+
 	return csrPEM, nil
 }

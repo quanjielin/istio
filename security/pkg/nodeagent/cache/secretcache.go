@@ -117,11 +117,15 @@ func (sc *SecretCache) keyCertRotationJob() {
 }
 
 func (sc *SecretCache) rotate(t time.Time) {
+	log.Infof("*****rotate start")
+
 	sc.secrets.Range(func(key interface{}, value interface{}) bool {
 		proxyID := key.(string)
 		now := time.Now()
 
 		e := value.(sds.SecretItem)
+
+		log.Infof("*****rotate for secret %+v", e)
 
 		// Remove stale secrets from cache, this prevent the cache growing indefinitely.
 		if now.After(e.CreatedTime.Add(sc.evictionDuration)) {
@@ -131,8 +135,12 @@ func (sc *SecretCache) rotate(t time.Time) {
 
 		// Re-generate secret if it's expired.
 		if sc.shouldRefresh(&e) {
+			log.Infof("*****rotate shouldRefresh")
+
 			go func() {
 				if sc.isTokenExpired(&e) {
+					log.Infof("*****rotate tokenExpired for %+v", e)
+
 					// Send the notification to close the stream connection if both cert and token have expired.
 					if err := sds.NotifyProxy(proxyID, nil /*nil indicates close the streaming connection to proxy*/); err != nil {
 						log.Errorf("Failed to notify for proxy %q: %v", proxyID, err)
