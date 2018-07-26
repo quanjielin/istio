@@ -170,7 +170,12 @@ containers:
   - mountPath: /etc/certs/
     name: istio-certs
     readOnly: true
+  - mountPath: /var/run/sds
+    name: sdsudspath
 volumes:
+- name: sdsudspath
+  hostPath:
+    path: /var/run/sds
 - emptyDir:
     medium: Memory
   name: istio-envoy

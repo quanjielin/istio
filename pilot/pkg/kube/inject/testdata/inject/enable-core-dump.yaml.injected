@@ -9,7 +9,7 @@ spec:
   template:
     metadata:
       annotations:
-        sidecar.istio.io/status: '{"version":"c6d101f68fb63e03418bccd952180d428ba3f9db7479dcc76eb852e5a34d5067","initContainers":["istio-init","enable-core-dump"],"containers":["istio-proxy"],"volumes":["istio-envoy","istio-certs"],"imagePullSecrets":null}'
+        sidecar.istio.io/status: '{"version":"c6d101f68fb63e03418bccd952180d428ba3f9db7479dcc76eb852e5a34d5067","initContainers":["istio-init","enable-core-dump"],"containers":["istio-proxy"],"volumes":["sdsudspath","istio-envoy","istio-certs"],"imagePullSecrets":null}'
       creationTimestamp: null
       labels:
         app: hello
@@ -85,6 +85,8 @@ spec:
         - mountPath: /etc/certs/
           name: istio-certs
           readOnly: true
+        - mountPath: /var/run/sds
+          name: sdsudspath
       initContainers:
       - args:
         - -p
@@ -122,6 +124,10 @@ spec:
         securityContext:
           privileged: true
       volumes:
+      - name: sdsudspath
+        hostPath:
+          path: /var/run/sds
+          type: ""
       - emptyDir:
           medium: Memory
         name: istio-envoy

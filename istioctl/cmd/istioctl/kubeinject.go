@@ -251,6 +251,7 @@ istioctl kube-inject -f deployment.yaml -o deployment-injected.yaml --injectConf
 			}
 
 			var sidecarTemplate string
+			log.Infof("********************hub %q, tag %q", hub, tag)
 
 			// hub and tag params only work with ISTIOCTL_USE_BUILTIN_DEFAULTS
 			// so must be specified together. hub and tag no longer have defaults.

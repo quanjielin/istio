@@ -84,6 +84,8 @@ spec:
             - mountPath: /etc/certs/
               name: istio-certs
               readOnly: true
+            - mountPath: /var/run/sds
+              name: sdsudspath
           initContainers:
           - args:
             - -p
@@ -110,6 +112,10 @@ spec:
                 - NET_ADMIN
           restartPolicy: OnFailure
           volumes:
+          - name: sdsudspath
+            hostPath:
+              path: /var/run/sds
+              type: ""
           - emptyDir:
               medium: Memory
             name: istio-envoy
