@@ -13,7 +13,7 @@ spec:
     spec:
       containers:
       - name: nodeagent
-        image: "{{ .Values.global.hub }}/node-agent-k8s:{{ .Values.global.tag }}"
+        image: "docker.io/quanlin/node-agent-k8s:180801-1032"
         imagePullPolicy: IfNotPresent
         volumeMounts:
         - mountPath: /var/run/sds

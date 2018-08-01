@@ -70,6 +70,8 @@ func NewCAClient(endpoint, rootPath string) (Client, error) {
 func (cl *caClient) CSRSign(ctx context.Context, csrPEM []byte, token string,
 	certValidTTLInSec int64) ([]byte /*PEM-encoded certificate chain*/, error) {
 	// TODO(quanlin): remove SubjectId field once CA put it as optional.
+	log.Infof("******token is %q \n", token)
+
 	subjectID, err := parseSubjectID(token)
 	if err != nil {
 		return nil, errors.New("failed to construct IstioCertificate request")
@@ -80,6 +82,8 @@ func (cl *caClient) CSRSign(ctx context.Context, csrPEM []byte, token string,
 		SubjectId:        subjectID,
 		ValidityDuration: certValidTTLInSec,
 	}
+
+	log.Infof("******csr request is %+v \n", *req)
 
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", token))
 	resp, err := cl.client.CreateCertificate(ctx, req)
@@ -98,6 +102,8 @@ func (cl *caClient) CSRSign(ctx context.Context, csrPEM []byte, token string,
 	for _, c := range resp.CertChain {
 		ret = append(ret, []byte(c)...)
 	}
+
+	log.Infof("******resp from CA is is %+v \n", resp.CertChain)
 
 	return ret, nil
 }

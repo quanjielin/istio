@@ -96,6 +96,7 @@ func (s *sdsservice) register(rpcs *grpc.Server) {
 }
 
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Infof("**********StreamSecrets got request")
 	ctx := stream.Context()
 	token, err := getCredentialToken(ctx)
 	if err != nil {
@@ -113,6 +114,8 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 		// Block until a request is received.
 		select {
 		case discReq, ok := <-reqChannel:
+			log.Infof("**********StreamSecrets got discReq %+v", *discReq)
+
 			if !ok {
 				// Remote side closed connection.
 				return receiveError
