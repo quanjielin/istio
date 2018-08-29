@@ -322,13 +322,14 @@ func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableO
 	//	return nil
 	//}
 
-	if !isRbacEnabled(string(svc), attr.Namespace, in.Env.IstioConfigStore) {
+	rbacEnabled, globalPermissive := isRbacEnabled(string(svc), attr.Namespace, in.Env.IstioConfigStore)
+	if !rbacEnabled {
 		return nil
 	}
 
 	service := createServiceMetadata(&attr, in.ServiceInstance)
 	rbacLog.Debugf("building filter config for %v", *service)
-	filter := buildHTTPFilter(service, in.Env.IstioConfigStore)
+	filter := buildHTTPFilter(service, in.Env.IstioConfigStore, globalPermissive)
 	if filter != nil {
 		rbacLog.Infof("built filter config for %s", service.name)
 		for cnum := range mutable.FilterChains {
@@ -376,7 +377,7 @@ func isServiceInList(svc string, namespace string, li *rbacproto.RbacConfig_Targ
 	return false
 }
 
-func isRbacEnabled(svc string, ns string, store model.IstioConfigStore) bool {
+func isRbacEnabled(svc string, ns string, store model.IstioConfigStore) (bool /*rbac enabed*/, bool /*permissive mode*/) {
 	var configProto *rbacproto.RbacConfig
 	config := store.RbacConfig()
 	if config != nil {
@@ -384,25 +385,26 @@ func isRbacEnabled(svc string, ns string, store model.IstioConfigStore) bool {
 	}
 	if configProto == nil {
 		rbacLog.Debugf("disabled, no RbacConfig")
-		return false
+		return false, false
 	}
 
+	isPermissive := configProto.EnforcementMode == rbacproto.EnforcementMode_PERMISSIVE
 	switch configProto.Mode {
 	case rbacproto.RbacConfig_ON:
-		return true
+		return true, isPermissive
 	case rbacproto.RbacConfig_ON_WITH_INCLUSION:
-		return isServiceInList(svc, ns, configProto.Inclusion)
+		return isServiceInList(svc, ns, configProto.Inclusion), isPermissive
 	case rbacproto.RbacConfig_ON_WITH_EXCLUSION:
-		return !isServiceInList(svc, ns, configProto.Exclusion)
+		return !isServiceInList(svc, ns, configProto.Exclusion), isPermissive
 	default:
 		rbacLog.Debugf("rbac plugin disabled by RbacConfig: %v", *configProto)
-		return false
+		return false, isPermissive
 	}
 }
 
 // buildHTTPFilter builds the RBAC http filter that enforces the access control to the specified
 // service which is co-located with the sidecar proxy.
-func buildHTTPFilter(service *serviceMetadata, store model.IstioConfigStore) *http_conn.HttpFilter {
+func buildHTTPFilter(service *serviceMetadata, store model.IstioConfigStore, globalPermissive bool) *http_conn.HttpFilter {
 	namespace, present := service.attributes[attrDestNamespace]
 	if !present {
 		rbacLog.Errorf("no namespace for service %v", service)
@@ -418,7 +420,7 @@ func buildHTTPFilter(service *serviceMetadata, store model.IstioConfigStore) *ht
 		rbacLog.Infof("no service role binding in namespace %s", namespace)
 	}
 
-	config := convertRbacRulesToFilterConfig(service, roles, bindings)
+	config := convertRbacRulesToFilterConfig(service, roles, bindings, globalPermissive)
 	rbacLog.Debugf("generated filter config: %v", *config)
 	return &http_conn.HttpFilter{
 		Name:   rbacFilterName,
@@ -430,20 +432,9 @@ func buildHTTPFilter(service *serviceMetadata, store model.IstioConfigStore) *ht
 // in service mesh to the corresponding proxy config for the specified service. The generated proxy config
 // will be consumed by envoy RBAC filter to enforce access control on the specified service.
 func convertRbacRulesToFilterConfig(
-	service *serviceMetadata, roles []model.Config, bindings []model.Config) *rbacconfig.RBAC {
-	// roleToBinding maps ServiceRole name to a list of ServiceRoleBindings.
-	roleToBinding := map[string][]*rbacproto.ServiceRoleBinding{}
-	for _, binding := range bindings {
-		bindingProto := binding.Spec.(*rbacproto.ServiceRoleBinding)
-		roleName := bindingProto.RoleRef.Name
-		if roleName == "" {
-			rbacLog.Errorf("ignored invalid binding %s in %s with empty RoleRef.Name",
-				binding.Name, binding.Namespace)
-			continue
-		}
-		roleToBinding[roleName] = append(roleToBinding[roleName], bindingProto)
-	}
+	service *serviceMetadata, roles []model.Config, bindings []model.Config, globalPermissive bool) *rbacconfig.RBAC {
 
+	rbacLog.Infof("******globalPermissive is %v", globalPermissive)
 	rbac := &policyproto.RBAC{
 		Action:   policyproto.RBAC_ALLOW,
 		Policies: map[string]*policyproto.Policy{},
@@ -454,11 +445,37 @@ func convertRbacRulesToFilterConfig(
 		Policies: map[string]*policyproto.Policy{},
 	}
 
+	if globalPermissive {
+		return &rbacconfig.RBAC{
+			ShadowRules: permissiveRbac}
+	}
+
+	// roleToBinding maps ServiceRole name to a list of ServiceRoleBindings.
+	roleToBinding := map[string][]*rbacproto.ServiceRoleBinding{}
+	for _, binding := range bindings {
+		rbacLog.Infof("*********convertRbacRulesToFilterConfig binding %+v", binding)
+		bindingProto := binding.Spec.(*rbacproto.ServiceRoleBinding)
+		roleName := bindingProto.RoleRef.Name
+		if roleName == "" {
+			rbacLog.Errorf("ignored invalid binding %s in %s with empty RoleRef.Name",
+				binding.Name, binding.Namespace)
+			continue
+		}
+		roleToBinding[roleName] = append(roleToBinding[roleName], bindingProto)
+	}
+
 	for _, role := range roles {
+		rbacLog.Infof("*********convertRbacRulesToFilterConfig role %+v", role)
+
 		enforcedPrincipals, permissivePrincipals := convertToPrincipals(roleToBinding[role.Name])
 		if len(enforcedPrincipals) == 0 && len(permissivePrincipals) == 0 {
 			rbacLog.Debugf("role skipped for no principals found")
 			continue
+		}
+
+		rbacLog.Infof("*******permissivePrincipals len is %d", len(permissivePrincipals))
+		for _, p := range permissivePrincipals {
+			rbacLog.Infof("*********permissivePrincipals %+v", *p)
 		}
 
 		rbacLog.Debugf("checking role %v", role.Name)
@@ -466,12 +483,12 @@ func convertRbacRulesToFilterConfig(
 		for i, rule := range role.Spec.(*rbacproto.ServiceRole).Rules {
 			if service.match(rule) {
 				// Generate the policy if the service is matched to the services specified in ServiceRole.
-				rbacLog.Debugf("matched AccessRule[%d]", i)
+				rbacLog.Infof("******matched AccessRule[%d]", i)
 				permissions = append(permissions, convertToPermission(rule))
 			}
 		}
 		if len(permissions) == 0 {
-			rbacLog.Debugf("role skipped for no AccessRule matched")
+			rbacLog.Infof("******role skipped for no AccessRule matched")
 			continue
 		}
 
@@ -487,12 +504,17 @@ func convertRbacRulesToFilterConfig(
 				Permissions: permissions,
 				Principals:  permissivePrincipals,
 			}
+
+			rbacLog.Infof("*******permissiveRbac.Policies is %+v", *permissiveRbac.Policies[role.Name])
 		}
 	}
 
-	return &rbacconfig.RBAC{
+	ret := &rbacconfig.RBAC{
 		Rules:       rbac,
 		ShadowRules: permissiveRbac}
+
+	rbacLog.Infof("*******rbac config is %+v", *ret)
+	return ret
 }
 
 // convertToPermission converts a single AccessRule to a Permission.
@@ -544,6 +566,7 @@ func convertToPrincipals(bindings []*rbacproto.ServiceRoleBinding) ([]*policypro
 			}
 		} else {
 			for _, subject := range binding.Subjects {
+				rbacLog.Infof("*********convertToPrincipals permissivePrincipals %+v", *subject)
 				permissivePrincipals = append(permissivePrincipals, convertToPrincipal(subject))
 			}
 		}
