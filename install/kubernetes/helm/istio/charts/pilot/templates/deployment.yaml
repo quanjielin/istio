@@ -69,6 +69,8 @@ spec:
                 fieldPath: metadata.namespace
           - name: PILOT_CACHE_SQUASH
             value: "5"
+          - name: PILOT_CACHE_SQUASH
+            value: "5"
           {{- if .Values.env }}
           {{- range $key, $val := .Values.env }}
           - name: {{ $key }}

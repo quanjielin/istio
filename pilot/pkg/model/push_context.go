@@ -73,6 +73,10 @@ type PushContext struct {
 	destinationRuleHosts   []Hostname
 	destinationRuleByHosts map[Hostname]*combinedDestinationRule
 
+	// service instances group by proxyID//
+	// one proxy could hold mulitple serviceInstances.
+	serviceInstanceByProxy map[string][]*ServiceInstance
+
 	//TODO: gateways              []*networking.Gateway
 
 	// AuthzPolicies stores the existing authorization policies in the cluster. Could be nil if there
