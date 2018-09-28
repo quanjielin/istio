@@ -57,7 +57,7 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 		return nil
 	}
 
-	return &auth.SdsSecretConfig{
+	ret := &auth.SdsSecretConfig{
 		Name: serviceAccount,
 		SdsConfig: &core.ConfigSource{
 			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
@@ -69,6 +69,15 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 								GoogleGrpc: &core.GrpcService_GoogleGrpc{
 									TargetUri:  sdsUdsPath,
 									StatPrefix: SDSStatPrefix,
+									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
+										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
+											LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
+										},
+										/*
+											CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_GoogleDefault{
+												GoogleDefault: &types.Empty{},
+											},*/
+									},
 									CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
 										&core.GrpcService_GoogleGrpc_CallCredentials{
 											CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
@@ -84,6 +93,9 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 			},
 		},
 	}
+
+	log.Infof("************************sds config is %+v", ret)
+	return ret
 }
 
 // ConstructValidationContext constructs ValidationContext in CommonTlsContext.

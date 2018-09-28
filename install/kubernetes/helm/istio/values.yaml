@@ -497,11 +497,11 @@ security:
 # nodeagent configuration
 #
 nodeagent:
-  enabled: false
+  enabled: true
   image: node-agent-k8s
   sdsudspath: ""
   env:
-    CA_ADDR: ""
+    CA_ADDR: istioca.googleapis.com:443
 
 #
 # addons configuration
