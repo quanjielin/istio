@@ -123,7 +123,7 @@ func setupFilterChains(authnPolicy *authn.Policy, serviceAccount string, sdsUdsP
 		//tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, []string{} /*subjectAltNames*/)
 		tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS("ROOTCA", sdsUdsPath, []string{} /*subjectAltNames*/)
 		tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
-			model.ConstructSdsSecretConfig(serviceAccount, sdsUdsPath),
+			model.ConstructSdsSecretConfig("default", sdsUdsPath),
 		}
 	}
 	mtls := GetMutualTLS(authnPolicy)

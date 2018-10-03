@@ -17,6 +17,7 @@ package v1alpha3
 import (
 	"fmt"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -515,7 +516,7 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 			}
 		} else {
 			//cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, tls.SubjectAltNames)
-			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS("ROOTCA", sdsUdsPath, tls.SubjectAltNames)
+
 			cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{}
 
 			/*
@@ -530,14 +531,25 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 					existAccounts[sa] = true
 				}*/
 
+			defaultResourceName := "default"
+			cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
+				model.ConstructSdsSecretConfig(defaultResourceName, sdsUdsPath))
+
+			rootResourceName := "ROOTCA"
 			if len(tls.SubjectAltNames) > 0 {
+				rootNames := []string{rootResourceName}
+				rootNames = append(rootNames, tls.SubjectAltNames...)
+				rootResourceName = strings.Join(rootNames, ",")
+
 				/*
 					cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
 						model.ConstructSdsSecretConfig(tls.SubjectAltNames[0], sdsUdsPath)) */
 
-				cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
-					model.ConstructSdsSecretConfig("spiffe://cluster.local/ns/istio-system/sa/default", sdsUdsPath))
+				//resourceName := "spiffe://cluster.local/ns/istio-system/sa/default"
+
 			}
+
+			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS(rootResourceName, sdsUdsPath, tls.SubjectAltNames)
 		}
 
 		// Set default SNI of cluster name for istio_mutual if sni is not set.

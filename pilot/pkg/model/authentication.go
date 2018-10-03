@@ -52,13 +52,13 @@ func GetConsolidateAuthenticationPolicy(store IstioConfigStore, service *Service
 }
 
 // ConstructSdsSecretConfig constructs SDS Sececret Configuration.
-func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.SdsSecretConfig {
-	if serviceAccount == "" || sdsUdsPath == "" {
+func ConstructSdsSecretConfig(resourceName, sdsUdsPath string) *auth.SdsSecretConfig {
+	if resourceName == "" || sdsUdsPath == "" {
 		return nil
 	}
 
 	ret := &auth.SdsSecretConfig{
-		Name: serviceAccount,
+		Name: resourceName,
 		SdsConfig: &core.ConfigSource{
 			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
 				ApiConfigSource: &core.ApiConfigSource{
