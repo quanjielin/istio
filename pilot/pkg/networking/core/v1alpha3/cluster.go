@@ -517,15 +517,25 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, tls.SubjectAltNames)
 			cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{}
 
-			existAccounts := make(map[string]bool)
-			for _, sa := range tls.SubjectAltNames {
-				if _, found := existAccounts[sa]; !found {
-					cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs =
-						append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
-							model.ConstructSdsSecretConfig(sa, sdsUdsPath))
-				}
+			/*
+				existAccounts := make(map[string]bool)
+				for _, sa := range tls.SubjectAltNames {
+					if _, found := existAccounts[sa]; !found {
+						cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs =
+							append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
+								model.ConstructSdsSecretConfig(sa, sdsUdsPath))
+					}
 
-				existAccounts[sa] = true
+					existAccounts[sa] = true
+				}*/
+
+			if len(tls.SubjectAltNames) > 0 {
+				/*
+					cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
+						model.ConstructSdsSecretConfig(tls.SubjectAltNames[0], sdsUdsPath)) */
+
+				cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
+					model.ConstructSdsSecretConfig("spiffe://cluster.local/ns/istio-system/sa/default", sdsUdsPath))
 			}
 		}
 

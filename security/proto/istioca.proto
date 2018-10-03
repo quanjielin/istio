@@ -15,7 +15,7 @@
 syntax = "proto3";
 
 //package istio.v1.auth;
-package google.security.istioca.v1alpha1;
+package istio.v1.auth;
 
 // Certificate request message.
 message IstioCertificateRequest {

@@ -25,7 +25,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"istio.io/istio/pkg/log"
-	capb "istio.io/istio/security/proto"
+	capb "istio.io/istio/security/proto/ca/google"
 )
 
 // Client interface defines the clients need to implement to talk to CA for CSR.
