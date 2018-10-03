@@ -549,7 +549,7 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 
 			}
 
-			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS(rootResourceName, sdsUdsPath, tls.SubjectAltNames)
+			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS(rootResourceName, sdsUdsPath)
 		}
 
 		// Set default SNI of cluster name for istio_mutual if sni is not set.

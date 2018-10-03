@@ -118,7 +118,7 @@ func ConstructValidationContext(rootCAFilePath string, subjectAltNames []string)
 }
 
 // ConstructValidationContextSDS constructs ValidationContext in CommonTlsContext, fetching root cert through SDS.
-func ConstructValidationContextSDS(resourceName, sdsUdsPath string, subjectAltNames []string) *auth.CommonTlsContext_ValidationContextSdsSecretConfig {
+func ConstructValidationContextSDS(resourceName, sdsUdsPath string) *auth.CommonTlsContext_ValidationContextSdsSecretConfig {
 	ret := &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
 		ValidationContextSdsSecretConfig: ConstructSdsSecretConfig(resourceName, sdsUdsPath),
 	}
