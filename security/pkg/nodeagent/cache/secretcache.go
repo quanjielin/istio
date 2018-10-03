@@ -145,6 +145,7 @@ func (sc *SecretCache) GenerateSecret(ctx context.Context, proxyID, resourceName
 		}
 
 		sc.secrets.Store(key, *ns)
+		log.Infof("------------successfully fetch root cert")
 		return ns, nil
 	}
 

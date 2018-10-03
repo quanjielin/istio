@@ -514,7 +514,8 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 				},
 			}
 		} else {
-			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, tls.SubjectAltNames)
+			//cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, tls.SubjectAltNames)
+			cluster.TlsContext.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS("ROOTCA", sdsUdsPath, tls.SubjectAltNames)
 			cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{}
 
 			/*

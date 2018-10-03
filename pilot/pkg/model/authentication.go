@@ -117,6 +117,20 @@ func ConstructValidationContext(rootCAFilePath string, subjectAltNames []string)
 	return ret
 }
 
+// ConstructValidationContextSDS constructs ValidationContext in CommonTlsContext, fetching root cert through SDS.
+func ConstructValidationContextSDS(resourceName, sdsUdsPath string, subjectAltNames []string) *auth.CommonTlsContext_ValidationContextSdsSecretConfig {
+	ret := &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
+		ValidationContextSdsSecretConfig: ConstructSdsSecretConfig(resourceName, sdsUdsPath),
+	}
+
+	/*
+		if len(subjectAltNames) > 0 {
+			ret.ValidationContext.VerifySubjectAltName = subjectAltNames
+		} */
+
+	return ret
+}
+
 // ParseJwksURI parses the input URI and returns the corresponding hostname, port, and whether SSL is used.
 // URI must start with "http://" or "https://", which corresponding to "http" or "https" scheme.
 // Port number is extracted from URI if available (i.e from postfix :<port>, eg. ":80"), or assigned

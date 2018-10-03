@@ -120,7 +120,8 @@ func setupFilterChains(authnPolicy *authn.Policy, serviceAccount string, sdsUdsP
 			},
 		}
 	} else {
-		tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, []string{} /*subjectAltNames*/)
+		//tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.CARootCertPath, []string{} /*subjectAltNames*/)
+		tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContextSDS("ROOTCA", sdsUdsPath, []string{} /*subjectAltNames*/)
 		tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
 			model.ConstructSdsSecretConfig(serviceAccount, sdsUdsPath),
 		}
