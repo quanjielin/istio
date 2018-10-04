@@ -45,6 +45,9 @@ var (
 	fakeCredentialToken = "faketoken"
 	testResourceName    = "default"
 
+	testVerifySubjectAltNames = []string{"sub1", "sub2"}
+	testResourceNameRoot      = "ROOTCA,sub1,sub2"
+
 	fakeSecret = &model.SecretItem{
 		CertificateChain: fakeCertificateChain,
 		PrivateKey:       fakePrivateKey,
@@ -112,7 +115,7 @@ func testHelper(t *testing.T, testSocket string, cb secretCallback) {
 
 	// Request for root certificate.
 	rootCertReq := &api.DiscoveryRequest{
-		ResourceNames: []string{"ROOTCA"},
+		ResourceNames: []string{testResourceNameRoot},
 		Node: &core.Node{
 			Id: proxyID,
 		},
@@ -230,7 +233,7 @@ func verifySDSSResponseForRootCert(t *testing.T, resp *api.DiscoveryResponse, ex
 	}
 
 	expectedResponseSecret := authapi.Secret{
-		Name: "ROOTCA",
+		Name: testResourceNameRoot,
 		Type: &authapi.Secret_ValidationContext{
 			ValidationContext: &authapi.CertificateValidationContext{
 				TrustedCa: &core.DataSource{
@@ -238,6 +241,7 @@ func verifySDSSResponseForRootCert(t *testing.T, resp *api.DiscoveryResponse, ex
 						InlineBytes: expectedRootCert,
 					},
 				},
+				VerifySubjectAltName: testVerifySubjectAltNames,
 			},
 		},
 	}
