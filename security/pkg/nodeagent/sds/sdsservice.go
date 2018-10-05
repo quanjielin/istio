@@ -43,7 +43,11 @@ const (
 
 	// CredentialTokenHeaderKey is the header key in gPRC header which is used to
 	// pass credential token from envoy's SDS request to SDS service.
-	CredentialTokenHeaderKey = "authorization"
+
+	//CredentialTokenHeaderKey = "authorization"
+
+	authHeaderKey            = "authorization"
+	CredentialTokenHeaderKey = "istio_sds_credentail_header"
 )
 
 var (
@@ -96,12 +100,14 @@ func (s *sdsservice) register(rpcs *grpc.Server) {
 }
 
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Infof("*****************node agent receives request")
 	ctx := stream.Context()
 	token, err := getCredentialToken(ctx)
 	if err != nil {
 		log.Errorf("Failed to get credential token from incoming request: %v", err)
 		return err
 	}
+	log.Infof("********************token is %+v", token)
 
 	var receiveError error
 	reqChannel := make(chan *xdsapi.DiscoveryRequest, 1)
@@ -231,16 +237,27 @@ func parseDiscoveryRequest(discReq *xdsapi.DiscoveryRequest) (string /*resourceN
 func getCredentialToken(ctx context.Context) (string, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
+		log.Info("******unable to get metadata from incoming context")
 		return "", fmt.Errorf("unable to get metadata from incoming context")
 	}
 
 	if h, ok := metadata[CredentialTokenHeaderKey]; ok {
 		if len(h) != 1 {
+			log.Info("****credential token must have 1 value in gRPC")
 			return "", fmt.Errorf("credential token must have 1 value in gRPC metadata but got %d", len(h))
 		}
 		return h[0], nil
 	}
 
+	log.Infof("****no credential token is found in header %q", CredentialTokenHeaderKey)
+
+	if h, ok := metadata[authHeaderKey]; ok {
+		if len(h) != 1 {
+			log.Info("****authorization token must have 1 value in gRPC")
+		} else {
+			log.Infof("********find authorization header %q", h[0])
+		}
+	}
 	return "", fmt.Errorf("no credential token is found")
 }
 

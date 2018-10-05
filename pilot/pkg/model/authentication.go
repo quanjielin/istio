@@ -15,12 +15,17 @@
 package model
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	"github.com/gogo/protobuf/jsonpb"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 
 	authn "istio.io/api/authentication/v1alpha1"
@@ -57,6 +62,19 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 		return nil
 	}
 
+	metaConfig := &v2alpha.FileBasedMetadataConfig{
+		SecretData: &core.DataSource{
+			Specifier: &core.DataSource_Filename{
+				Filename: "/var/run/secrets/tokens/vault-token",
+			},
+		},
+		HeaderKey: "istio_sds_credentail_header",
+	}
+	config, err := messageToStruct(metaConfig)
+	if err != nil {
+		log.Infof("************messageToStruct hit error %v", err)
+	}
+
 	return &auth.SdsSecretConfig{
 		Name: serviceAccount,
 		SdsConfig: &core.ConfigSource{
@@ -74,10 +92,39 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 											LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
 										},
 									},
+									/*
+										CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
+											&core.GrpcService_GoogleGrpc_CallCredentials{
+												CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
+													GoogleComputeEngine: &types.Empty{},
+												},
+											},
+										},*/
+									/*
+										CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
+											&core.GrpcService_GoogleGrpc_CallCredentials{
+												CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+													FromPlugin: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+														Name: "envoy.grpc_credentials.file_based_metadata",
+														Config: &v2alpha.FileBasedMetadataConfig{
+															SecretData: &core.DataSource{
+																Specifier: &core.DataSource_Filename{
+																	Filename: "/var/run/secrets/tokens",
+																},
+															},
+															HeaderKey: "istio_sds_credentail_header",
+														},
+													},
+												},
+											},
+										},*/
 									CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
 										&core.GrpcService_GoogleGrpc_CallCredentials{
-											CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
-												GoogleComputeEngine: &types.Empty{},
+											CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+												FromPlugin: &core.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+													Name:   "envoy.grpc_credentials.file_based_metadata",
+													Config: config,
+												},
 											},
 										},
 									},
@@ -89,6 +136,24 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 			},
 		},
 	}
+}
+
+func messageToStruct(msg proto.Message) (*types.Struct, error) {
+	if msg == nil {
+		return nil, errors.New("nil message")
+	}
+
+	buf := &bytes.Buffer{}
+	if err := (&jsonpb.Marshaler{OrigName: true}).Marshal(buf, msg); err != nil {
+		return nil, err
+	}
+
+	pbs := &types.Struct{}
+	if err := jsonpb.Unmarshal(buf, pbs); err != nil {
+		return nil, err
+	}
+
+	return pbs, nil
 }
 
 // ConstructValidationContext constructs ValidationContext in CommonTlsContext.
