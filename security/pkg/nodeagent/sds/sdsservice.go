@@ -46,8 +46,11 @@ const (
 
 	//CredentialTokenHeaderKey = "authorization"
 
-	authHeaderKey            = "authorization"
-	CredentialTokenHeaderKey = "istio_sds_credentail_header"
+	authHeaderKey = "authorization"
+
+	CredentialTokenHeaderKey = "istio_sds_credentail_header-bin"
+
+	//CredentialTokenHeaderKey = "istio_sds_credentail_header-bin"
 )
 
 var (
@@ -241,6 +244,29 @@ func getCredentialToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("unable to get metadata from incoming context")
 	}
 
+	if h, ok := metadata[authHeaderKey]; ok {
+		if len(h) != 1 {
+			log.Info("****authorization token must have 1 value in gRPC")
+		} else {
+			log.Infof("********find authorization header %q", h[0])
+		}
+	} else {
+		log.Info("***************no authorization token is found")
+	}
+
+	mp := map[string][]string(metadata)
+	if len(mp) > 0 {
+		for k, v := range mp {
+			log.Infof("metadata key is %q \n", k)
+			for _, s := range v {
+				log.Infof("for key %q val is %q\n", k, s)
+			}
+			log.Info("\n")
+		}
+	} else {
+		log.Info("*************metadata is empty\n")
+	}
+
 	if h, ok := metadata[CredentialTokenHeaderKey]; ok {
 		if len(h) != 1 {
 			log.Info("****credential token must have 1 value in gRPC")
@@ -251,13 +277,6 @@ func getCredentialToken(ctx context.Context) (string, error) {
 
 	log.Infof("****no credential token is found in header %q", CredentialTokenHeaderKey)
 
-	if h, ok := metadata[authHeaderKey]; ok {
-		if len(h) != 1 {
-			log.Info("****authorization token must have 1 value in gRPC")
-		} else {
-			log.Infof("********find authorization header %q", h[0])
-		}
-	}
 	return "", fmt.Errorf("no credential token is found")
 }
 

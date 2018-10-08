@@ -66,9 +66,12 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 		SecretData: &core.DataSource{
 			Specifier: &core.DataSource_Filename{
 				Filename: "/var/run/secrets/tokens/vault-token",
+				//Filename: "/var/run/secrets/tokentest/vault-token",
 			},
 		},
-		HeaderKey: "istio_sds_credentail_header",
+
+		HeaderKey: "istio_sds_credentail_header-bin",
+		//HeaderKey: "istio_sds_credentail_header-bin",
 	}
 	config, err := messageToStruct(metaConfig)
 	if err != nil {
@@ -85,8 +88,9 @@ func ConstructSdsSecretConfig(serviceAccount string, sdsUdsPath string) *auth.Sd
 						{
 							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
 								GoogleGrpc: &core.GrpcService_GoogleGrpc{
-									TargetUri:  sdsUdsPath,
-									StatPrefix: SDSStatPrefix,
+									TargetUri:              sdsUdsPath,
+									StatPrefix:             SDSStatPrefix,
+									CredentialsFactoryName: "envoy.grpc_credentials.file_based_metadata",
 									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
 										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
 											LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},

@@ -32,5 +32,9 @@ RUN useradd -m --uid 1337 istio-proxy && \
 RUN mkdir -p /var/run/secrets/tokens && \
     chown -R istio-proxy /var/run/secrets/tokens
 
+RUN mkdir -p /var/run/secrets/tokentest && \
+    chown -R istio-proxy /var/run/secrets/tokentest && \
+    echo "eyJhbGciOiJSUzI1NiIsImtpZCI6IiJ9.eyJhdWQiOlsidmF1bHQiXSwiZXhwIjoxNTM4Njk4ODA1LCJpYXQiOjE1Mzg2OTE2MDUsImlzcyI6Imh0dHBzOi8vc3RvcmFnZS5nb29nbGVhcGlzLmNvbS9na2Utb2lkYy9iZWUwNjBlNGEzZWQ2NTMyYjg0YzRjYjI5MTY0MzcxNjUwNGExNWY5NGMwNzBjMDE3OGU5NzdjNjU1MzUwNjZkIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJkZWZhdWx0IiwicG9kIjp7Im5hbWUiOiJoZWxsb3BvZCIsInVpZCI6ImE1MmVjNzk1LWM4MjMtMTFlOC04ZGZjLTQyMDEwYTgwMDAwNyJ9LCJzZXJ2aWNlYWNjb3VudCI6eyJuYW1lIjoiamVua2lucyIsInVpZCI6ImE1MWZjYjNmLWM4MjMtMTFlOC04ZGZjLTQyMDEwYTgwMDAwNyJ9fSwibmJmIjoxNTM4NjkxNjA1LCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpqZW5raW5zIn0.bL-Awy10Bg8i4AEqvv8z-A2CnA9ypjKiKBHIeyayLn1C3btplN72agY20eJq0vz57bVpfp76ISSVyfTK0O4txfbwqW1wz_-uPI9FuPy0iLlE7B_pY_io2vdhFeKWiaYzsomw_fu0NAI1w5u5Uwr13Jue3jAIDlKwS7Tkcr3MV73-FWp4mKJIoCXaq58BGdEybK3rootroot@helc" >> /var/run/secrets/tokentest/vault-token
+
 # The pilot-agent will bootstrap Envoy.
 ENTRYPOINT ["/usr/local/bin/pilot-agent"]
