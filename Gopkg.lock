@@ -1450,6 +1450,7 @@
     "googleapis/logging/v2",
     "googleapis/monitoring/v3",
     "googleapis/rpc/status",
+    "googleapis/iam/credentials/v1",
     "protobuf/field_mask",
   ]
   pruneopts = "NUT"
