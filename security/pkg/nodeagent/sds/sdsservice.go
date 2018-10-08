@@ -46,8 +46,9 @@ const (
 
 	//CredentialTokenHeaderKey = "authorization"
 
-	authHeaderKey            = "authorization"
-	CredentialTokenHeaderKey = "istio_sds_credentail_header"
+	authHeaderKey = "authorization"
+	//CredentialTokenHeaderKey = "istio_sds_credentail_header"
+	CredentialTokenHeaderKey = "istio_sds_credentail_header-bin"
 )
 
 var (
@@ -258,6 +259,20 @@ func getCredentialToken(ctx context.Context) (string, error) {
 			log.Infof("********find authorization header %q", h[0])
 		}
 	}
+
+	mp := map[string][]string(metadata)
+	if len(mp) > 0 {
+		for k, v := range mp {
+			log.Infof("metadata key is %q \n", k)
+			for _, s := range v {
+				log.Infof("for key %q val is %q\n", k, s)
+			}
+			log.Info("\n")
+		}
+	} else {
+		log.Info("*************metadata is empty\n")
+	}
+
 	return "", fmt.Errorf("no credential token is found")
 }
 
