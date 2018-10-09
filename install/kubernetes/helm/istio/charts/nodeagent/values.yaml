@@ -1,8 +1,8 @@
 #
 # nodeagent configuration
 #
-enabled: false
+enabled: true
 image: node-agent-k8s
-sdsudspath: ""
+sdsudspath: "unix:/var/run/sds/uds_path"
 env:
-  CA_ADDR: ""
+  CA_ADDR: "istioca.googleapis.com:443"
