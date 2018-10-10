@@ -5,4 +5,5 @@ enabled: true
 image: node-agent-k8s
 sdsudspath: "unix:/var/run/sds/uds_path"
 env:
+  CA_PROVIDER: "GoogleCA"
   CA_ADDR: "istioca.googleapis.com:443"
