@@ -32,6 +32,7 @@ type googleCAClient struct {
 
 // NewGoogleCAClient create an CA client for Google CA.
 func NewGoogleCAClient(conn *grpc.ClientConn) caClientInterface.Client {
+	log.Info("***************NewGoogleCAClient")
 	return &googleCAClient{
 		client: gcapb.NewIstioCertificateServiceClient(conn),
 	}
@@ -44,12 +45,16 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		ValidityDuration: certValidTTLInSec,
 	}
 
+	log.Infof("***********google caclient token %q", token)
+
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", token))
 	resp, err := cl.client.CreateCertificate(ctx, req)
 	if err != nil {
 		log.Errorf("Failed to create certificate: %v", err)
 		return nil, err
 	}
+
+	log.Infof("********resp cert chain is %q", resp.CertChain)
 
 	if len(resp.CertChain) <= 1 {
 		log.Errorf("CertChain length is %d, expected more than 1", len(resp.CertChain))

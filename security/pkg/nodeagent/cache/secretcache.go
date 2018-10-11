@@ -301,6 +301,8 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		return nil, err
 	}
 
+	log.Info("*******finish GenCSR")
+
 	certChainPEM, err := sc.caClient.CSRSign(ctx, csrPEM, token, int64(sc.secretTTL.Seconds()))
 	if err != nil {
 		log.Errorf("Failed to sign cert for %q: %v", resourceName, err)

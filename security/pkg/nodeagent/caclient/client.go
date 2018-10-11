@@ -31,6 +31,7 @@ const googleCA = "GoogleCA"
 
 // NewCAClient create an CA client.
 func NewCAClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterface.Client, error) {
+	log.Infof("*******provider name is %q", CAProviderName)
 	var opts grpc.DialOption
 	if tlsFlag {
 		pool, err := x509.SystemCertPool()
@@ -54,6 +55,6 @@ func NewCAClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterfa
 	case googleCA:
 		return gca.NewGoogleCAClient(conn), nil
 	default:
-		return nil, nil
+		return nil, fmt.Errorf("CA provider %q isn't supported", CAProviderName)
 	}
 }
