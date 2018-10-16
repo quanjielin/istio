@@ -507,7 +507,7 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 			}
 		} else {
 			cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
-				model.ConstructSdsSecretConfig(model.SDSDefaultResourceName, sdsUdsPath))
+				model.ConstructSdsSecretConfig(model.SDSDefaultResourceName, sdsUdsPath, model.K8sSAJwtTokenFileName))
 
 			rootResourceName := model.SDSRootResourceName
 			if len(tls.SubjectAltNames) > 0 {
@@ -518,7 +518,7 @@ func applyUpstreamTLSSettings(cluster *v2.Cluster, tls *networking.TLSSettings, 
 			}
 
 			cluster.TlsContext.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
-				ValidationContextSdsSecretConfig: model.ConstructSdsSecretConfig(rootResourceName, sdsUdsPath),
+				ValidationContextSdsSecretConfig: model.ConstructSdsSecretConfig(rootResourceName, sdsUdsPath, model.K8sSAJwtTokenFileName),
 			}
 		}
 
