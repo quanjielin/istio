@@ -180,12 +180,21 @@ containers:
 {{ if eq .SDSEnabled true -}}
   - mountPath: /var/run/sds
     name: sdsudspath
+  - mountPath: /var/run/secrets/tokens
+    name: istio-token
 {{ end -}}
 volumes:
 {{ if eq .SDSEnabled true -}}
 - name: sdsudspath
   hostPath:
     path: /var/run/sds
+- name: istio-token
+  projected:
+    sources:
+    - serviceAccountToken:
+        path: istio-token
+        expirationSeconds: 3600
+        audience: istio
 {{ end -}}
 - emptyDir:
     medium: Memory
