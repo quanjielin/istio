@@ -104,7 +104,7 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.Fi
 		},
 	}
 	if sdsUdsPath == "" {
-		log.Debuga("SDS isn't enabled")
+		log.Info("********setupFilterChains sdsUdsPath isn't set")
 
 		tls.CommonTlsContext.ValidationContextType = model.ConstructValidationContext(model.AuthCertsPath+model.RootCertFilename, []string{} /*subjectAltNames*/)
 		tls.CommonTlsContext.TlsCertificates = []*auth.TlsCertificate{
@@ -122,6 +122,8 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string) []plugin.Fi
 			},
 		}
 	} else {
+		log.Info("********setupFilterChains sdsUdsPath is enabled")
+
 		tls.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
 			ValidationContextSdsSecretConfig: model.ConstructSdsSecretConfig(model.SDSRootResourceName, sdsUdsPath, model.K8sSAJwtTokenFileName),
 		}

@@ -39,7 +39,13 @@ data:
 
     # Unix Domain Socket through which envoy communicates with NodeAgent SDS to get
     # key/cert for mTLS. Use secret-mount files instead of SDS if set to empty. 
+    {{- if .Values.global.sdsEnabled }}
+    sdsUdsPath: "unix:/var/run/sds/uds_path"
+    {{- else }}
     sdsUdsPath: ""
+    {{- end }}
+
+    enableTokenVolumeMount: {{ .Values.global.tokenVolumeMountEnabled }}
 
     #
     defaultConfig:

@@ -74,6 +74,7 @@ func ConstructSdsSecretConfig(name, sdsUdsPath, tokenMountFileName string) *auth
 		return nil
 	}
 
+	log.Infof("*********token mount file name is %q", tokenMountFileName)
 	gRPCConfig := &core.GrpcService_GoogleGrpc{
 		TargetUri:  sdsUdsPath,
 		StatPrefix: SDSStatPrefix,
@@ -108,6 +109,7 @@ func ConstructSdsSecretConfig(name, sdsUdsPath, tokenMountFileName string) *auth
 			},
 		}
 	} else {
+		log.Infof("********ConstructSdsSecretConfig fails to detect file: %v", err)
 		gRPCConfig.CallCredentials = []*core.GrpcService_GoogleGrpc_CallCredentials{
 			&core.GrpcService_GoogleGrpc_CallCredentials{
 				CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
