@@ -424,10 +424,15 @@ func convertRbacRulesToFilterConfig(
 			}
 		}
 	}
+	// If RBAC permissive mode is only set on policy level, set ShadowRules only when there is policy in permissive mode.
+	// Otherwise permissive mode attributes will be sent to mixer, which causes confusion.
+	if len(permissiveRbac.Policies) > 0 {
+		return &rbacconfig.RBAC{
+			Rules:       rbac,
+			ShadowRules: permissiveRbac}
+	}
 
-	return &rbacconfig.RBAC{
-		Rules:       rbac,
-		ShadowRules: permissiveRbac}
+	return &rbacconfig.RBAC{Rules: rbac}
 }
 
 // convertToPermission converts a single AccessRule to a Permission.

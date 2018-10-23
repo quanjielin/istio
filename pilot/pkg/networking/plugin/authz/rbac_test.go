@@ -666,10 +666,6 @@ func TestConvertRbacRulesToFilterConfigPermissive(t *testing.T) {
 			Action:   policy.RBAC_ALLOW,
 			Policies: map[string]*policy.Policy{},
 		},
-		ShadowRules: &policy.RBAC{
-			Action:   policy.RBAC_ALLOW,
-			Policies: map[string]*policy.Policy{},
-		},
 	}
 
 	testCases := []struct {
