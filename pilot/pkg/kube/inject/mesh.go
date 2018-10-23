@@ -80,7 +80,10 @@ initContainers:
   securityContext:
     privileged: true
 {{- end }}
-
+{{ if eq .EnableSdsTokenMount true -}}
+securityContext:
+  fsGroup: 2000
+{{ end -}}
 containers:
 - name: istio-proxy
   image: [[ annotation .ObjectMeta $proxyImageKey "{{ .ProxyImage }}" ]]
@@ -173,6 +176,9 @@ containers:
     [[ end -]]
     [[ if eq (annotation .ObjectMeta $interceptionModeKey .ProxyConfig.InterceptionMode) "TPROXY" -]]
     runAsUser: 1337
+    {{ if eq .EnableSdsTokenMount true -}}
+    runAsGroup: 2000
+    {{ end -}}
     [[- end ]]
   volumeMounts:
   - mountPath: /etc/istio/proxy
@@ -184,11 +190,24 @@ containers:
   - mountPath: /var/run/sds
     name: sdsudspath
 {{ end -}}
+{{ if eq .EnableSdsTokenMount true -}}
+  - mountPath: /var/run/secrets/tokens
+    name: istio-token
+{{ end -}}
 volumes:
 {{ if eq .SDSEnabled true -}}
 - name: sdsudspath
   hostPath:
     path: /var/run/sds
+{{ end -}}
+{{ if eq .EnableSdsTokenMount true -}}
+- name: istio-token
+  projected:
+    sources:
+    - serviceAccountToken:
+        path: istio-token
+        expirationSeconds: 3600
+        audience: istio
 {{ end -}}
 - emptyDir:
     medium: Memory

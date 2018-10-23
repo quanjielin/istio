@@ -69,6 +69,10 @@ data:
         securityContext:
           privileged: true
       {{ end }}
+      {{ if .Values.global.sds.enableSdsTokenMount }}
+      securityContext:
+        fsGroup: 2000
+      {{ end }}
       containers:
       - name: istio-proxy
         image: {{ "[[ if (isset .ObjectMeta.Annotations \"sidecar.istio.io/proxyImage\") -]]" }}
@@ -151,6 +155,9 @@ data:
           runAsGroup: 1337
           {{ "[[ else -]]" }}
           runAsUser: 1337
+          {{ if .Values.global.sds.enableSdsTokenMount }}
+          runAsGroup: 2000
+          {{ end }}
           {{ "[[- end ]]" }}
         resources:
           {{ "[[ if (isset .ObjectMeta.Annotations \"sidecar.istio.io/proxyCPU\") -]]" }}
@@ -172,11 +179,24 @@ data:
         - mountPath: /var/run/sds
           name: sds-uds-path
         {{ end }}
+        {{ if .Values.global.sds.enableSdsTokenMount }}
+        - mountPath: /var/run/secrets/tokens
+          name: istio-token
+        {{ end }}
       volumes:
       {{ if .Values.global.sds.enabled }}
       - name: sds-uds-path
         hostPath:
           path: /var/run/sds
+      {{ end }}
+      {{ if .Values.global.sds.enableSdsTokenMount }}
+      - name: istio-token
+        projected:
+          sources:
+          - serviceAccountToken:
+              path: istio-token
+              expirationSeconds: 3600
+              audience: istio
       {{ end }}
       - emptyDir:
           medium: Memory
