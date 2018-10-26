@@ -68,8 +68,8 @@ func NewPlugin() plugin.Plugin {
 	}
 }
 
-// ExchangeToken exchanges token.
-func (p Plugin) ExchangeToken(ctx context.Context, trustedDomain, inputToken string) (string /*outputToken*/, time.Time /*expireTime*/, error) {
+// Execute exchanges token.
+func (p Plugin) Execute(ctx context.Context, trustedDomain, inputToken string) (string /*outputToken*/, time.Time /*expireTime*/, error) {
 	req := &iam.GenerateIdentityBindingAccessTokenRequest{
 		//Name:  "projects/-/serviceAccounts/testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com",
 		Name:  fmt.Sprintf("projects/-/serviceAccounts/%s", trustedDomain),
@@ -77,6 +77,7 @@ func (p Plugin) ExchangeToken(ctx context.Context, trustedDomain, inputToken str
 		Jwt:   inputToken,
 	}
 
+	log.Infof("**************GenerateIdentityBindingAccessToken request is %+v", req)
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", inputToken))
 	r, err := p.iamClient.GenerateIdentityBindingAccessToken(ctx, req)
 	if err != nil {

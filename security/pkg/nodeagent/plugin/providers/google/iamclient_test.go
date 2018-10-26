@@ -89,9 +89,9 @@ func TestIAMClientPlugin(t *testing.T) {
 
 	p := NewPlugin()
 
-	outputToken, expireTime, err := p.ExchangeToken(context.Background(), "fakeTrustedDomain", "fakeInputToken")
+	outputToken, expireTime, err := p.Execute(context.Background(), "fakeTrustedDomain", "fakeInputToken")
 	if err != nil {
-		t.Fatalf("failed to call ExchangeToken: %v", err)
+		t.Fatalf("failed to call Execute: %v", err)
 	}
 	if outputToken != fakeToken {
 		t.Errorf("resp outputToken: got %+v, expected %q", outputToken, fakeToken)

@@ -51,6 +51,7 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		return nil, err
 	}
 
+	log.Infof("**********cert chain in resp %+v", resp.CertChain)
 	if len(resp.CertChain) <= 1 {
 		log.Errorf("CertChain length is %d, expected more than 1", len(resp.CertChain))
 		return nil, errors.New("invalid response cert chain")

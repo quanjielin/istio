@@ -288,10 +288,10 @@ func portForwardPilot(kubeConfig, pilotURL string) (error, *os.Process, string) 
 
 func main() {
 	kubeConfig := flag.String("kubeconfig", "~/.kube/config", "path to the kubeconfig file. Default is ~/.kube/config")
-	pilotURL := flag.String("pilot", "", "pilot address. Will try port forward if not provided.")
+	pilotURL := flag.String("pilot", "localhost:15010", "pilot address. Will try port forward if not provided.")
 	configType := flag.String("type", "lds", "lds, cds, or eds. Default lds.")
 	proxyType := flag.String("proxytype", "", "sidecar, ingress, router.")
-	resources := flag.String("res", "", "Resource(s) to get config for. Should be pod name or app label or istio label for lds and cds type. For eds, it is comma separated list of cluster name.")
+	resources := flag.String("res", "sleep-d7c8bf487-xcs2f", "Resource(s) to get config for. Should be pod name or app label or istio label for lds and cds type. For eds, it is comma separated list of cluster name.")
 	outputFile := flag.String("out", "", "output file. Leave blank to go to stdout")
 	flag.Parse()
 

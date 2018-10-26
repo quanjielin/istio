@@ -26,6 +26,7 @@ import (
 	"istio.io/istio/pkg/log"
 	ca "istio.io/istio/security/pkg/nodeagent/caclient/interface"
 	"istio.io/istio/security/pkg/nodeagent/model"
+	"istio.io/istio/security/pkg/nodeagent/plugin/providers/google"
 	"istio.io/istio/security/pkg/pki/util"
 )
 
@@ -311,7 +312,18 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		return nil, err
 	}
 
-	certChainPEM, err := sc.caClient.CSRSign(ctx, csrPEM, token, int64(sc.secretTTL.Seconds()))
+	// poc
+	iamPlugin := iamclient.NewPlugin()
+	trustedDomain := "testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com"
+	gaiaToken, expireTime, err := iamPlugin.Execute(ctx, trustedDomain, token)
+	if err != nil {
+		log.Infof("*********call gaia fail %v", err)
+	} else {
+		log.Infof("******call gaia got token %q, expireTime %v", gaiaToken, expireTime)
+	}
+
+	//certChainPEM, err := sc.caClient.CSRSign(ctx, csrPEM, token, int64(sc.secretTTL.Seconds()))
+	certChainPEM, err := sc.caClient.CSRSign(ctx, csrPEM, gaiaToken, int64(sc.secretTTL.Seconds()))
 	if err != nil {
 		log.Errorf("Failed to sign cert for %q: %v", resourceName, err)
 		return nil, err

@@ -17,7 +17,6 @@ package model
 import (
 	"fmt"
 	"net/url"
-	"os"
 	"strconv"
 
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -84,7 +83,8 @@ func ConstructSdsSecretConfig(name, sdsUdsPath, tokenMountFileName string) *auth
 		},
 	}
 
-	if _, err := os.Stat(tokenMountFileName); err == nil {
+	//if _, err := os.Stat(tokenMountFileName); err == nil {
+	if true {
 		// If k8s sa jwt token volume mount file exists, envoy only handles plugin credentials.
 		tokenMountConfig := &v2alpha.FileBasedMetadataConfig{
 			SecretData: &core.DataSource{
