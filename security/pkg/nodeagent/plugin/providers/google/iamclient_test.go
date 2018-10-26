@@ -80,6 +80,13 @@ func TestIAMClientPlugin(t *testing.T) {
 	// The goroutine starting the server may not be ready, results in flakiness.
 	time.Sleep(1 * time.Second)
 
+	iamEndpoint = lis.Addr().String()
+	tlsFlag = false
+	defer func() {
+		iamEndpoint = "iamcredentials.googleapis.com:443"
+		tlsFlag = true
+	}()
+
 	p := NewPlugin()
 
 	outputToken, expireTime, err := p.ExchangeToken(context.Background(), "fakeTrustedDomain", "fakeInputToken")

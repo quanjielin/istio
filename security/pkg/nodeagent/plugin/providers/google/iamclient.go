@@ -16,6 +16,7 @@ package iamclient
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"time"
@@ -23,6 +24,8 @@ import (
 	"github.com/golang/protobuf/ptypes"
 
 	iam "google.golang.org/genproto/googleapis/iam/credentials/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/security/pkg/nodeagent/plugin"
@@ -33,26 +36,20 @@ type Plugin struct {
 	iamClient iam.IAMCredentialsClient
 }
 
-var endpoint = "https://iamcredentials.googleapis.com"
+var (
+	scope       = []string{"https://www.googleapis.com/auth/cloud-platform"}
+	iamEndpoint = "iamcredentials.googleapis.com:443"
+	tlsFlag     = true
+)
 
-// NewPlugin returns an instance of the authn plugin
+// NewPlugin returns an instance of the google iam client plugin
 func NewPlugin() plugin.Plugin {
-	return Plugin{}
-}
-
-var scope = []string{"https://www.googleapis.com/auth/cloud-platform"}
-
-/*
-type iamClient struct {
-	iam.IAMCredentialsClient
-}
-func NewClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterface.Client, error) {
 	var opts grpc.DialOption
 	if tlsFlag {
 		pool, err := x509.SystemCertPool()
 		if err != nil {
 			log.Errorf("could not get SystemCertPool: %v", err)
-			return nil, errors.New("could not get SystemCertPool")
+			return nil
 		}
 		creds := credentials.NewClientTLSFromCert(pool, "")
 		opts = grpc.WithTransportCredentials(creds)
@@ -60,19 +57,16 @@ func NewClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterface
 		opts = grpc.WithInsecure()
 	}
 
-	conn, err := grpc.Dial(endpoint, opts)
+	conn, err := grpc.Dial(iamEndpoint, opts)
 	if err != nil {
-		log.Errorf("Failed to connect to endpoint %q: %v", endpoint, err)
-		return nil, fmt.Errorf("failed to connect to endpoint %q", endpoint)
+		log.Errorf("Failed to connect to endpoint %q: %v", iamEndpoint, err)
+		return nil
 	}
 
-	switch CAProviderName {
-	case googleCA:
-		return gca.NewGoogleCAClient(conn), nil
-	default:
-		return nil, fmt.Errorf("CA provider %q isn't supported. Currently Istio only supports %q", CAProviderName, strings.Join([]string{googleCA}, ","))
+	return Plugin{
+		iamClient: iam.NewIAMCredentialsClient(conn),
 	}
-}*/
+}
 
 // ExchangeToken exchanges token.
 func (p Plugin) ExchangeToken(ctx context.Context, trustedDomain, inputToken string) (string /*outputToken*/, time.Time /*expireTime*/, error) {
