@@ -69,7 +69,7 @@ func NewPlugin() plugin.Plugin {
 }
 
 // Execute exchanges token.
-func (p Plugin) Execute(ctx context.Context, trustedDomain, inputToken string) (string /*outputToken*/, time.Time /*expireTime*/, error) {
+func (p Plugin) ExchangeToken(ctx context.Context, trustedDomain, inputToken string) (string /*outputToken*/, time.Time /*expireTime*/, error) {
 	req := &iam.GenerateIdentityBindingAccessTokenRequest{
 		//Name:  "projects/-/serviceAccounts/testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com",
 		Name:  fmt.Sprintf("projects/-/serviceAccounts/%s", trustedDomain),
