@@ -14,13 +14,83 @@
 
 package iamclient
 
-// Below is commented to prevent lint test from complaining about the struct
-// not being used
+import (
+	"context"
+	"errors"
+	"fmt"
+	"time"
 
-// import (
-// 	iam "google.golang.org/genproto/googleapis/iam/credentials/v1"
-// )
+	"github.com/golang/protobuf/ptypes"
 
-// type iamClient struct {
-// 	client iam.IAMCredentialsClient
-// }
+	iam "google.golang.org/genproto/googleapis/iam/credentials/v1"
+	"google.golang.org/grpc/metadata"
+	"istio.io/istio/pkg/log"
+	"istio.io/istio/security/pkg/nodeagent/plugin"
+)
+
+// Plugin implements Istio mTLS auth
+type Plugin struct {
+	iamClient iam.IAMCredentialsClient
+}
+
+var endpoint = "https://iamcredentials.googleapis.com"
+
+// NewPlugin returns an instance of the authn plugin
+func NewPlugin() plugin.Plugin {
+	return Plugin{}
+}
+
+var scope = []string{"https://www.googleapis.com/auth/cloud-platform"}
+
+/*
+type iamClient struct {
+	iam.IAMCredentialsClient
+}
+func NewClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterface.Client, error) {
+	var opts grpc.DialOption
+	if tlsFlag {
+		pool, err := x509.SystemCertPool()
+		if err != nil {
+			log.Errorf("could not get SystemCertPool: %v", err)
+			return nil, errors.New("could not get SystemCertPool")
+		}
+		creds := credentials.NewClientTLSFromCert(pool, "")
+		opts = grpc.WithTransportCredentials(creds)
+	} else {
+		opts = grpc.WithInsecure()
+	}
+
+	conn, err := grpc.Dial(endpoint, opts)
+	if err != nil {
+		log.Errorf("Failed to connect to endpoint %q: %v", endpoint, err)
+		return nil, fmt.Errorf("failed to connect to endpoint %q", endpoint)
+	}
+
+	switch CAProviderName {
+	case googleCA:
+		return gca.NewGoogleCAClient(conn), nil
+	default:
+		return nil, fmt.Errorf("CA provider %q isn't supported. Currently Istio only supports %q", CAProviderName, strings.Join([]string{googleCA}, ","))
+	}
+}*/
+
+// ExchangeToken exchanges token.
+func (p Plugin) ExchangeToken(ctx context.Context, trustedDomain, inputToken string) (string /*outputToken*/, time.Time /*expireTime*/, error) {
+	req := &iam.GenerateIdentityBindingAccessTokenRequest{
+		//Name:  "projects/-/serviceAccounts/testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com",
+		Name:  fmt.Sprintf("projects/-/serviceAccounts/%s", trustedDomain),
+		Scope: scope,
+		Jwt:   inputToken,
+	}
+
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", inputToken))
+	r, err := p.iamClient.GenerateIdentityBindingAccessToken(ctx, req)
+	if err != nil {
+		log.Errorf("Failed to call GenerateIdentityBindingAccessToken: %v", err)
+		return "", time.Now(), errors.New("failed to exchange token")
+	}
+
+	expireTime, _ := ptypes.Timestamp(r.ExpireTime)
+
+	return r.AccessToken, expireTime, nil
+}
