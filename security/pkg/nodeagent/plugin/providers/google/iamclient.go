@@ -87,5 +87,6 @@ func (p Plugin) ExchangeToken(ctx context.Context, trustedDomain, inputToken str
 
 	expireTime, _ := ptypes.Timestamp(r.ExpireTime)
 
+	log.Infof("***************google gaia returns token %q", r.AccessToken)
 	return r.AccessToken, expireTime, nil
 }

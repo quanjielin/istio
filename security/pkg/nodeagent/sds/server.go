@@ -24,9 +24,15 @@ import (
 
 	"istio.io/istio/pkg/log"
 	"istio.io/istio/security/pkg/nodeagent/cache"
+	"istio.io/istio/security/pkg/nodeagent/plugin"
+	"istio.io/istio/security/pkg/nodeagent/plugin/providers/google"
 )
 
 const maxStreams = 100000
+
+var availablePlugins = map[string]plugin.Plugin{
+	plugin.GoogleIAM: iamclient.NewPlugin(),
+}
 
 // Options provides all of the configuration parameters for secret discovery service.
 type Options struct {
@@ -44,6 +50,9 @@ type Options struct {
 
 	// The CA provider name.
 	CAProviderName string
+
+	// List of CA provider specific plugins' name.
+	PluginNames []string
 }
 
 // Server is the gPRC server that exposes SDS through UDS.
@@ -67,6 +76,17 @@ func NewServer(options Options, st cache.SecretManager) (*Server, error) {
 	log.Infof("SDS gRPC server start, listen %q \n", options.UDSPath)
 
 	return s, nil
+}
+
+// NewPlugins returns a slice of default Plugins.
+func NewPlugins(in []string) []plugin.Plugin {
+	var plugins []plugin.Plugin
+	for _, pl := range in {
+		if p, exist := availablePlugins[pl]; exist {
+			plugins = append(plugins, p)
+		}
+	}
+	return plugins
 }
 
 // Stop closes the gRPC server.

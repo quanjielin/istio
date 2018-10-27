@@ -50,7 +50,8 @@ var (
 				log.Errorf("failed to create caClient: %v", err)
 				return fmt.Errorf("failed to create caClient")
 			}
-			sc := cache.NewSecretCache(caClient, sds.NotifyProxy, cacheOptions)
+			plugins := sds.NewPlugins(serverOptions.PluginNames)
+			sc := cache.NewSecretCache(caClient, plugins, sds.NotifyProxy, cacheOptions)
 			defer sc.Close()
 
 			server, err := sds.NewServer(serverOptions, sc)
@@ -88,6 +89,9 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&serverOptions.CertFile, "sdsCertFile", "", "SDS gRPC TLS server-side certificate")
 	rootCmd.PersistentFlags().StringVar(&serverOptions.KeyFile, "sdsKeyFile", "", "SDS gRPC TLS server-side key")
+
+	rootCmd.PersistentFlags().StringArrayVar(&serverOptions.PluginNames, "pluginNames",
+		[]string{"GoogleIAM"}, "Secret eviction time duration")
 
 	rootCmd.PersistentFlags().DurationVar(&cacheOptions.SecretTTL, "secretTtl",
 		time.Hour, "Secret's TTL")

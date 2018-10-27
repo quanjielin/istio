@@ -113,7 +113,7 @@ type SecretCache struct {
 }
 
 // NewSecretCache creates a new secret cache.
-func NewSecretCache(cl ca.Client, notifyCb func(string, string, *model.SecretItem) error, options Options) *SecretCache {
+func NewSecretCache(cl ca.Client, ps []plugin.Plugin, notifyCb func(string, string, *model.SecretItem) error, options Options) *SecretCache {
 	ret := &SecretCache{
 		caClient:         cl,
 		closing:          make(chan bool),
@@ -122,6 +122,7 @@ func NewSecretCache(cl ca.Client, notifyCb func(string, string, *model.SecretIte
 		rootCertMutex:    &sync.Mutex{},
 		rotationInterval: options.RotationInterval,
 		secretTTL:        options.SecretTTL,
+		plugins:          ps,
 	}
 
 	atomic.StoreUint64(&ret.secretChangedCount, 0)
@@ -315,20 +316,12 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		return nil, err
 	}
 
-	// poc
-	/*
-		iamPlugin := iamclient.NewPlugin()
-		trustedDomain := "testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com"
-		gaiaToken, expireTime, err := iamPlugin.ExchangeToken(ctx, trustedDomain, token)
-		if err != nil {
-			log.Infof("*********call gaia fail %v", err)
-		} else {
-			log.Infof("******call gaia got token %q, expireTime %v", gaiaToken, expireTime)
-		} */
-
+	// call authN provider specific plugins to exchange token if necessary.
 	exchangedToken := token
-	for _, p := range sc.plugins {
-		exchangedToken, _, _ = p.ExchangeToken(ctx, "" /*trusted domain*/, token)
+	if sc.plugins != nil {
+		for _, p := range sc.plugins {
+			exchangedToken, _, _ = p.ExchangeToken(ctx, "testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com" /*trusted domain*/, token)
+		}
 	}
 
 	//certChainPEM, err := sc.caClient.CSRSign(ctx, csrPEM, token, int64(sc.secretTTL.Seconds()))
