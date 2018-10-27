@@ -39,7 +39,7 @@ func TestGenerateSecret(t *testing.T) {
 		RotationInterval: 300 * time.Microsecond,
 		EvictionDuration: 2 * time.Second,
 	}
-	sc := NewSecretCache(fakeCACli, nil, notifyCb, opt)
+	sc := NewSecretCache(fakeCACli, nil, "" /*trusted domain*/, notifyCb, opt)
 	atomic.StoreUint32(&sc.skipTokenExpireCheck, 0)
 	defer func() {
 		sc.Close()
@@ -125,7 +125,7 @@ func TestRefreshSecret(t *testing.T) {
 		RotationInterval: 200 * time.Microsecond,
 		EvictionDuration: 10 * time.Second,
 	}
-	sc := NewSecretCache(fakeCACli, nil, notifyCb, opt)
+	sc := NewSecretCache(fakeCACli, nil, "" /*trusted domain*/, notifyCb, opt)
 	atomic.StoreUint32(&sc.skipTokenExpireCheck, 0)
 	defer func() {
 		sc.Close()

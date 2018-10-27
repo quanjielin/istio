@@ -109,11 +109,12 @@ type SecretCache struct {
 	rootCertMutex *sync.Mutex
 	rootCert      []byte
 
-	plugins []plugin.Plugin
+	plugins       []plugin.Plugin
+	trustedDomain string
 }
 
 // NewSecretCache creates a new secret cache.
-func NewSecretCache(cl ca.Client, ps []plugin.Plugin, notifyCb func(string, string, *model.SecretItem) error, options Options) *SecretCache {
+func NewSecretCache(cl ca.Client, ps []plugin.Plugin, trustedDomain string, notifyCb func(string, string, *model.SecretItem) error, options Options) *SecretCache {
 	ret := &SecretCache{
 		caClient:         cl,
 		closing:          make(chan bool),
@@ -123,6 +124,7 @@ func NewSecretCache(cl ca.Client, ps []plugin.Plugin, notifyCb func(string, stri
 		rotationInterval: options.RotationInterval,
 		secretTTL:        options.SecretTTL,
 		plugins:          ps,
+		trustedDomain:    trustedDomain,
 	}
 
 	atomic.StoreUint64(&ret.secretChangedCount, 0)
@@ -320,7 +322,7 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 	exchangedToken := token
 	if sc.plugins != nil {
 		for _, p := range sc.plugins {
-			exchangedToken, _, _ = p.ExchangeToken(ctx, "testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com" /*trusted domain*/, token)
+			exchangedToken, _, _ = p.ExchangeToken(ctx, sc.trustedDomain, token)
 		}
 	}
 

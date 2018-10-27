@@ -53,6 +53,9 @@ type Options struct {
 
 	// List of CA provider specific plugins' name.
 	PluginNames []string
+
+	// The trust domain in which node agent run in.
+	TrustedDomain string
 }
 
 // Server is the gPRC server that exposes SDS through UDS.
