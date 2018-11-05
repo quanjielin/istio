@@ -672,7 +672,7 @@ generate_yaml: $(HELM) $(HOME)/.helm helm-repo-add
 		--namespace=istio-system \
 		--set global.hub=${HUB} \
 		--set global.mtls.enabled=true \
-		--set global.controlPlaneSecurityEnabled=true \
+		--set global.controlPlaneSecurityEnabled=false \
 		--set global.proxy.enableCoreDump=${ENABLE_COREDUMP} \
 		--set istio_cni.enabled=${ENABLE_ISTIO_CNI} \
 		${EXTRA_HELM_SETTINGS} \
