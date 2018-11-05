@@ -41,7 +41,7 @@ security:
 # nodeagent configuration
 #
 nodeagent:
-  enabled: true
+  enabled: false
 
 #
 # ingress configuration
@@ -333,6 +333,6 @@ global:
   sds:
     # SDS enabled. IF set to true, mTLS certificates for the sidecars will be
     # distributed through the SecretDiscoveryService instead of using K8S secrets to mount the certificates.
-    enabled: true
-    udsPath: "unix:/var/run/sds/uds_path"
+    enabled: false
+    udsPath: ""
     enableTokenMount: false
