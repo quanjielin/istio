@@ -25,10 +25,14 @@ import (
 
 	"istio.io/istio/pkg/log"
 	caClientInterface "istio.io/istio/security/pkg/nodeagent/caclient/interface"
+	cca "istio.io/istio/security/pkg/nodeagent/caclient/providers/citadel"
 	gca "istio.io/istio/security/pkg/nodeagent/caclient/providers/google"
 )
 
-const googleCA = "GoogleCA"
+const (
+	googleCA = "GoogleCA"
+	citadel  = "Citadel"
+)
 
 // NewCAClient create an CA client.
 func NewCAClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterface.Client, error) {
@@ -54,6 +58,8 @@ func NewCAClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterfa
 	switch CAProviderName {
 	case googleCA:
 		return gca.NewGoogleCAClient(conn), nil
+	case citadel:
+		return cca.NewCitadelClient(conn), nil
 	default:
 		return nil, fmt.Errorf("CA provider %q isn't supported. Currently Istio only supports %q", CAProviderName, strings.Join([]string{googleCA}, ","))
 	}
