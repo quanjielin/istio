@@ -203,6 +203,7 @@ docker.node-agent: $(ISTIO_DOCKER)/node_agent
 
 docker.node-agent-k8s: security/docker/Dockerfile.node-agent-k8s
 docker.node-agent-k8s: $(ISTIO_DOCKER)/node_agent_k8s
+docker.node-agent-k8s: security/docker/roots.pem
 	$(DOCKER_RULE)
 
 docker.node-agent-test: security/docker/Dockerfile.node-agent-test

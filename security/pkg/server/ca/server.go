@@ -59,18 +59,25 @@ type Server struct {
 // it is signed by the CA signing key.
 func (s *Server) CreateCertificate(ctx context.Context, request *pb.IstioCertificateRequest) (
 	*pb.IstioCertificateResponse, error) {
-	caller := s.authenticate(ctx)
-	if caller == nil {
-		log.Warn("request authentication failure")
-		s.monitoring.AuthnError.Inc()
-		return nil, status.Error(codes.Unauthenticated, "request authenticate failure")
-	}
+	/*
+		caller := s.authenticate(ctx)
+		if caller == nil {
+			log.Warn("request authentication failure")
+			s.monitoring.AuthnError.Inc()
+			return nil, status.Error(codes.Unauthenticated, "request authenticate failure")
+		} */
+
+	// caller.identities
 
 	// TODO: Call authorizer.
 
 	_, _, certChainBytes, rootCertBytes := s.ca.GetCAKeyCertBundle().GetAll()
+	/*
+		cert, signErr := s.ca.Sign(
+			[]byte(request.Csr), caller.identities, time.Duration(request.ValidityDuration)*time.Second, false)
+	*/
 	cert, signErr := s.ca.Sign(
-		[]byte(request.Csr), caller.identities, time.Duration(request.ValidityDuration)*time.Second, false)
+		[]byte(request.Csr), []string{"spiffe://testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com/ns/default/sa/sleep"}, time.Duration(request.ValidityDuration)*time.Second, false)
 	if signErr != nil {
 		log.Errorf("CSR signing error (%v)", signErr.Error())
 		s.monitoring.GetCertSignError(signErr.(*ca.Error).ErrorType()).Inc()

@@ -32,12 +32,22 @@ import (
 const (
 	googleCA = "GoogleCA"
 	citadel  = "Citadel"
+
+	citadelRootPath = "/etc/istio/roots.pem"
 )
 
 // NewCAClient create an CA client.
 func NewCAClient(endpoint, CAProviderName string, tlsFlag bool) (caClientInterface.Client, error) {
 	var opts grpc.DialOption
-	if tlsFlag {
+	if CAProviderName == citadel {
+		creds, err := credentials.NewClientTLSFromFile(citadelRootPath, "")
+		if err != nil {
+			log.Errorf("Failed to read root certificate file: %v", err)
+			return nil, fmt.Errorf("failed to read root cert")
+		}
+		opts = grpc.WithTransportCredentials(creds)
+
+	} else if tlsFlag {
 		pool, err := x509.SystemCertPool()
 		if err != nil {
 			log.Errorf("could not get SystemCertPool: %v", err)

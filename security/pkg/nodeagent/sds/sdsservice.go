@@ -98,12 +98,14 @@ func (s *sdsservice) register(rpcs *grpc.Server) {
 }
 
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Info("*******SDS server received request")
 	ctx := stream.Context()
 	token, err := getCredentialToken(ctx)
 	if err != nil {
 		log.Errorf("Failed to get credential token from incoming request: %v", err)
 		return err
 	}
+	log.Infof("*******token is %q", token)
 
 	var receiveError error
 	reqChannel := make(chan *xdsapi.DiscoveryRequest, 1)
