@@ -684,7 +684,7 @@ func applyUpstreamTLSSettings(env *model.Environment, cluster *v2.Cluster, tls *
 			}
 		} else {
 			cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs = append(cluster.TlsContext.CommonTlsContext.TlsCertificateSdsSecretConfigs,
-				model.ConstructSdsSecretConfig(model.SDSDefaultResourceName, env.Mesh.SdsUdsPath, model.K8sSAJwtTokenFileName, env.Mesh.EnableSdsTokenMount))
+				model.ConstructSdsSecretConfig(model.SDSDefaultResourceName, env.Mesh.SdsUdsPath, model.K8sSATrustworthyJwtTokenFileName, env.Mesh.EnableSdsTokenMount))
 
 			rootResourceName := model.SDSRootResourceName
 			if len(tls.SubjectAltNames) > 0 {
@@ -696,7 +696,7 @@ func applyUpstreamTLSSettings(env *model.Environment, cluster *v2.Cluster, tls *
 
 			cluster.TlsContext.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_ValidationContextSdsSecretConfig{
 				ValidationContextSdsSecretConfig: model.ConstructSdsSecretConfig(
-					rootResourceName, env.Mesh.SdsUdsPath, model.K8sSAJwtTokenFileName, env.Mesh.EnableSdsTokenMount),
+					rootResourceName, env.Mesh.SdsUdsPath, model.K8sSATrustworthyJwtTokenFileName, env.Mesh.EnableSdsTokenMount),
 			}
 		}
 
