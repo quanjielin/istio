@@ -49,7 +49,8 @@ func (cl *citadelClient) CSRSign(ctx context.Context, csrPEM []byte, token strin
 		ValidityDuration: certValidTTLInSec,
 	}
 
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", token))
+	bearToken := "Bearer " + token
+	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", bearToken))
 	resp, err := cl.client.CreateCertificate(ctx, req)
 	if err != nil {
 		log.Errorf("Failed to create certificate: %v", err)

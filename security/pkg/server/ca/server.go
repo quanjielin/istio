@@ -26,6 +26,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"istio.io/istio/pkg/log"
@@ -59,25 +60,25 @@ type Server struct {
 // it is signed by the CA signing key.
 func (s *Server) CreateCertificate(ctx context.Context, request *pb.IstioCertificateRequest) (
 	*pb.IstioCertificateResponse, error) {
-	/*
-		caller := s.authenticate(ctx)
-		if caller == nil {
-			log.Warn("request authentication failure")
-			s.monitoring.AuthnError.Inc()
-			return nil, status.Error(codes.Unauthenticated, "request authenticate failure")
-		} */
+	caller := s.authenticate(ctx)
+	if caller == nil {
+		log.Warn("request authentication failure")
+		s.monitoring.AuthnError.Inc()
+		return nil, status.Error(codes.Unauthenticated, "request authenticate failure")
+	}
 
 	// caller.identities
 
 	// TODO: Call authorizer.
-
 	_, _, certChainBytes, rootCertBytes := s.ca.GetCAKeyCertBundle().GetAll()
+	cert, signErr := s.ca.Sign(
+		[]byte(request.Csr), caller.identities, time.Duration(request.ValidityDuration)*time.Second, false)
+
 	/*
 		cert, signErr := s.ca.Sign(
-			[]byte(request.Csr), caller.identities, time.Duration(request.ValidityDuration)*time.Second, false)
+			[]byte(request.Csr), []string{"spiffe://testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com/ns/default/sa/sleep"}, time.Duration(request.ValidityDuration)*time.Second, false)
 	*/
-	cert, signErr := s.ca.Sign(
-		[]byte(request.Csr), []string{"spiffe://testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com/ns/default/sa/sleep"}, time.Duration(request.ValidityDuration)*time.Second, false)
+
 	if signErr != nil {
 		log.Errorf("CSR signing error (%v)", signErr.Error())
 		s.monitoring.GetCertSignError(signErr.(*ca.Error).ErrorType()).Inc()
@@ -102,6 +103,14 @@ func (s *Server) CreateCertificate(ctx context.Context, request *pb.IstioCertifi
 // to sign is returned as part of the response object.
 // [TODO](myidpt): Deprecate this function.
 func (s *Server) HandleCSR(ctx context.Context, request *pb.CsrRequest) (*pb.CsrResponse, error) {
+	log.Info("*******citadel receives HandleCSR request")
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, fmt.Errorf("no metadata is attached")
+	}
+
+	log.Infof("******metadata is %+v", md)
+
 	s.monitoring.CSR.Inc()
 	caller := s.authenticate(ctx)
 	if caller == nil {
@@ -187,15 +196,26 @@ func New(ca ca.CertificateAuthority, ttl time.Duration, forCA bool, hostlist []s
 	authenticators := []authenticator{&clientCertAuthenticator{}}
 	// Temporarily disable ID token authenticator by resetting the hostlist.
 	// [TODO](myidpt): enable ID token authenticator when the CSR API authz can work correctly.
-	hostlistForJwtAuth := make([]string, 0)
-	for _, host := range hostlistForJwtAuth {
-		aud := fmt.Sprintf("grpc://%s:%d", host, port)
-		if jwtAuthenticator, err := newIDTokenAuthenticator(aud); err != nil {
-			log.Errorf("failed to create JWT authenticator (error %v)", err)
-		} else {
-			authenticators = append(authenticators, jwtAuthenticator)
-		}
+	/*
+		hostlistForJwtAuth := make([]string, 0)
+		for _, host := range hostlistForJwtAuth {
+			aud := fmt.Sprintf("grpc://%s:%d", host, port)
+			if jwtAuthenticator, err := newIDTokenAuthenticator(aud); err != nil {
+				log.Errorf("failed to create JWT authenticator (error %v)", err)
+			} else {
+				authenticators = append(authenticators, jwtAuthenticator)
+			}
+		}*/
+
+	//aud := fmt.Sprintf("grpc://%s:%d", host, port)
+	aud := "testgaia1@istionodeagenttestproj2.iam.gserviceaccount.com"
+	if jwtAuthenticator, err := newIDTokenAuthenticator(aud); err != nil {
+		log.Infof("***failed to newIDTokenAuthenticator: %v", err)
+		log.Errorf("failed to create JWT authenticator (error %v)", err)
+	} else {
+		authenticators = append(authenticators, jwtAuthenticator)
 	}
+
 	return &Server{
 		authenticators: authenticators,
 		authorizer:     &registryAuthorizor{registry.GetIdentityRegistry()},
@@ -256,7 +276,8 @@ func (s *Server) applyServerCertificate() (*tls.Certificate, error) {
 func (s *Server) authenticate(ctx context.Context) *caller {
 	// TODO: apply different authenticators in specific order / according to configuration.
 	for _, authn := range s.authenticators {
-		if u, _ := authn.authenticate(ctx); u != nil {
+		if u, err := authn.authenticate(ctx); u != nil {
+			log.Errorf("failed to authenticate: %v", err)
 			return u
 		}
 	}

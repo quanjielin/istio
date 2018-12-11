@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/peer"
 
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/security/pkg/pki/util"
 )
 
@@ -60,23 +61,31 @@ type clientCertAuthenticator struct{}
 func (cca *clientCertAuthenticator) authenticate(ctx context.Context) (*caller, error) {
 	peer, ok := peer.FromContext(ctx)
 	if !ok {
+		log.Info("****no client certificate is presented")
 		return nil, fmt.Errorf("no client certificate is presented")
 	}
+	log.Info("****client certificate is presented")
 
 	if authType := peer.AuthInfo.AuthType(); authType != "tls" {
+		log.Infof("****unsupported auth type: %q", authType)
 		return nil, fmt.Errorf("unsupported auth type: %q", authType)
+	} else {
+		log.Infof("****supported auth type: %q", authType)
 	}
 
 	tlsInfo := peer.AuthInfo.(credentials.TLSInfo)
 	chains := tlsInfo.State.VerifiedChains
 	if len(chains) == 0 || len(chains[0]) == 0 {
+		log.Info("****no verified chain is found")
 		return nil, fmt.Errorf("no verified chain is found")
 	}
 
 	ids, err := util.ExtractIDs(chains[0][0].Extensions)
 	if err != nil {
+		log.Infof("****failed to extract IDs %+v", ids)
 		return nil, err
 	}
+	log.Infof("****clientCertAuthenticator extract IDs %+v", ids)
 
 	return &caller{
 		authSource: authSourceClientCertificate,
@@ -103,25 +112,31 @@ func newIDTokenAuthenticator(aud string) (*idTokenAuthenticator, error) {
 func (ja *idTokenAuthenticator) authenticate(ctx context.Context) (*caller, error) {
 	bearerToken, err := extractBearerToken(ctx)
 	if err != nil {
+		log.Infof("*****ID token extraction error: %v", err)
 		return nil, fmt.Errorf("ID token extraction error: %v", err)
 	}
+	log.Infof("******bearerToken is %q", bearerToken)
 
 	idToken, err := ja.verifier.Verify(context.Background(), bearerToken)
 	if err != nil {
+		log.Infof("*****failed to verify idtoken: %v", err)
 		return nil, fmt.Errorf("failed to verify the ID token (error %v)", err)
 	}
 
 	// for GCP-issued JWT, the service account is in the "email" field
 	var sa struct {
 		Email string `json:"email"`
+		Sub   string `json:"sub"`
 	}
 	if err := idToken.Claims(&sa); err != nil {
+		log.Infof("*****failed to extract email field from ID token: %v", err)
 		return nil, fmt.Errorf("failed to extract email field from ID token: %v", err)
 	}
 
 	return &caller{
 		authSource: authSourceIDToken,
-		identities: []string{sa.Email},
+		//identities: []string{sa.Email},
+		identities: []string{sa.Sub},
 	}, nil
 }
 
@@ -131,16 +146,21 @@ func extractBearerToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("no metadata is attached")
 	}
 
+	log.Infof("******extractBearerToken metadata is %+v", md)
+
 	authHeader, exists := md[httpAuthHeader]
 	if !exists {
+		log.Errorf("*****no HTTP authorization header exists")
 		return "", fmt.Errorf("no HTTP authorization header exists")
 	}
 
 	for _, value := range authHeader {
+		log.Infof("*****header val is %+q", value)
 		if strings.HasPrefix(value, bearerTokenPrefix) {
 			return strings.TrimPrefix(value, bearerTokenPrefix), nil
 		}
 	}
 
+	log.Infof("****no bearer token exists in HTTP authorization header")
 	return "", fmt.Errorf("no bearer token exists in HTTP authorization header")
 }
