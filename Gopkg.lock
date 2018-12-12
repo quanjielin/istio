@@ -591,6 +591,13 @@
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:7ca243976bde54969fc49e585a50e475655cb3c245c43325bd7c8d5e01d9d1be"
+  name = "github.com/googleapis/googleapis"
+  packages = ["google/api"]
+  pruneopts = "NUT"
+  revision = "a207551d5190d2dc915ea261f19ce83eeee000d3"
+
+[[projects]]
   branch = "master"
   digest = "1:58b1e624caa63338aa6dcc3b73a199c2da75147290e48c9ba33581e683e0362e"
   name = "github.com/gophercloud/gophercloud"
@@ -1484,6 +1491,7 @@
     "googleapis/api/label",
     "googleapis/api/metric",
     "googleapis/api/monitoredres",
+    "googleapis/api/httpbody",
     "googleapis/appengine/logging/v1",
     "googleapis/cloud/audit",
     "googleapis/devtools/cloudtrace/v2",
