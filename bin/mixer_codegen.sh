@@ -80,13 +80,11 @@ IMPORTS=(
   "--proto_path=${ROOTDIR}/vendor/istio.io/api"
   "--proto_path=${ROOTDIR}/vendor/github.com/gogo/protobuf"
   "--proto_path=${ROOTDIR}/vendor/github.com/gogo/googleapis"
-  "--proto_path=${ROOTDIR}/vendor/github.com/googleapis/googleapis"
   "--proto_path=$optimport"
 )
 
 mappings=(
   "gogoproto/gogo.proto=github.com/gogo/protobuf/gogoproto"
-  "google/api/httpbody.proto=github.com/googleapis/googleapis/google/api"
   "google/protobuf/any.proto=github.com/gogo/protobuf/types"
   "google/protobuf/duration.proto=github.com/gogo/protobuf/types"
   "google/protobuf/timestamp.proto=github.com/gogo/protobuf/types"

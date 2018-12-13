@@ -1,0 +1,175 @@
+syntax = "proto3";
+
+package google.iam.credentials.v1;
+
+option cc_enable_arenas = true;
+
+import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
+//import "google/protobuf/struct.proto";
+
+// A service that exposes OAuth2.0 spec APIs for cloud service accounts.
+service CertificateService {
+  /*
+  // List public keys that belong to a cloud service account. Includes
+  // certificates for system-managed keys and certificates for user-downloaded
+  // keys. The returned certificates are in corresponding format
+  // (x509, RAW, JWK) in JSON representation.
+  // (-- This Rpc serves as the endpoint for OAuth2 Cert API's migration from
+  // Apiary to OnePlatform. This is not exposed as GCP IAM Credentials API but
+  // receives traffic from
+  //   - https://www.googleapis.com/oauth2/
+  //   - https://www.googleapis.com/service_accounts/v1/
+  //   - https://www.googleapis.com/robot/v1/
+  rpc ExternalListPublicCertificates(ExternalListPublicCertificatesRequest)
+      returns (google.protobuf.Struct) {
+    option (google.api.http) = {
+      get: "/service_accounts/v1/metadata/{certificate_format}/{name}"
+      additional_bindings:
+          { get: "/robot/v1/metadata/{certificate_format}/{name}" }
+      additional_bindings:
+          { get: "/service_accounts/v1/{certificate_format}/{name}" }
+      additional_bindings:
+          { get: "/oauth2/{federated_identity_cert_version}/certs" }
+      additional_bindings: {
+        get: "/oauth2/{federated_identity_cert_version=v1/raw_public_keys}"
+      }
+    };
+    option deadline = 5.0;
+    option fail_fast = true;
+    option security_level = PRIVACY_AND_INTEGRITY;
+    option client_logging = -1;
+    option server_logging = -1;
+  }*/
+
+  // Exchanges a third-party issued Json Web Token for an OAuth2.0 access token
+  // belongs to a Google Cloud service account.
+  // (-- The API is going to be exposed under
+  // https://securetoken.googleapis.com/v1/identitybindingtoken as a MVP.
+  // The returned HttpBody contains either GetFederatedTokenResponse or
+  // OAuth2Error.
+  rpc GetFederatedToken(GetFederatedTokenRequest)
+      returns (google.api.HttpBody) {
+    option (google.api.http) = {
+      post: "/v1/identitybindingtoken"
+      body: "*"
+    };
+    //option deadline = 5.0;
+    //option fail_fast = true;
+    //option security_level = PRIVACY_AND_INTEGRITY;
+    //option client_logging = -1;
+    //option server_logging = -1;
+  }
+}
+
+/*
+// Next id: 4
+message ExternalListPublicCertificatesRequest {
+  // Email address or Gaia ID of service account to get certificates for.
+  string name = 1;
+
+  // Requested format of certificates.
+  // Valid value: "x509", "RAW", "JWK" (case insensitive).
+  // Note: this needs to be a string because it is parsed from the URL.
+  string certificate_format = 2;
+
+  // Used to indicate the request is for getting certificates of federated
+  // identity OpenIdConnect service account in a certain format.
+  // Valid value: "v1", "v1/raw_public_key", "v2", "v3"
+  string federated_identity_cert_version = 3;
+} */
+
+message GetFederatedTokenRequest {
+  // REQUIRED. Indicating that a token change is being performed.
+  // The value must be 'urn:ietf:params:oauth:grant-type:token-exchange'.
+  string grant_type = 1;
+
+  // REQUIRED. Resource where the client intends to use the requested security
+  // token. The value should be the email or unique ID of a Google service
+  // account.
+  string audience = 2;
+
+  // REQUIRED. Desired OAuth2 scopes that will be included in the resulting
+  // access token.
+  repeated string scope = 3;
+
+  // REQUIRED. Identifier for the type of the requested security token.
+  // The only currently supported value is
+  // 'urn:ietf:params:oauth:token-type:access_token'
+  string requested_token_type = 4;
+
+  // REQUIRED. Input token.
+  // Must be in JWT format according to RFC7523 and must have
+  // key ID and algorithm specified in the header.
+  // Supported signing algorithms: RS256.
+  // Mandatory payload fields (along the lines of RFC 7523, section 3):
+  // - iss: issuer of the token. Must provide a discovery document at
+  //        $iss/.well-known/openid-configuration . The document needs to be
+  //        formatted according to section 4.2 of the OpenID Connect Discovery
+  //        1.0 specification.
+  // - iat: Issue time in seconds since epoch. Must be in the past.
+  // - exp: Expiration time in seconds since epoch. Must be less than 48 hours
+  //        after iat. We recommend to create tokens that last shorter than 6
+  //        hours to improve security unless business reasons mandate longer
+  //        expiration times. Shorter token lifetimes are generally more secure
+  //        since tokens that have been exfiltrated by attackers can be used for
+  //        a shorter time.
+  // - sub: JWT subject, identity asserted in the JWT.
+  // - aud: Configured in the mapper policy. By default the service account
+  //        unique ID.
+  //
+  // Claims from the incoming token can be transferred into the output token
+  // according to the mapper configuration. The outgoing claim size is limited.
+  // Outgoing claims size must be less than 4kB serialized as JSON without
+  // whitespace.
+  //
+  // Example header:
+  // {
+  //   "alg": "RS256",
+  //   "kid": "us-east-11"
+  // }
+  // Example payload:
+  // {
+  //   "iss": "https://accounts.google.com",
+  //   "iat": 1517963104,
+  //   "exp": 1517966704,
+  //   "aud": "113475438248934895348",
+  //   "sub": "113475438248934895348",
+  //   "my_claims": {
+  //     "additional_claim": "value"
+  //   }
+  // }
+  string subject_token = 5;
+
+  // REQUIRED. An identifier that indicates the type of the security token in
+  // the 'subject_token' parameter. The only currently supported value is
+  // 'urn:ietf:params:oauth:token-type:jwt'.
+  string subject_token_type = 6;
+}
+
+// Response message for GetFederatedToken API.
+message GetFederatedTokenResponse {
+  // The Google service account access token in the requested format.
+  // Currently, the token is only going to be an OAuth2.0 access token.
+  string access_token = 1 [json_name = "access_token"];
+
+  // Same value as 'requested_token_type' parameter in request.
+  string issued_token_type = 2 [json_name = "issued_token_type"];
+
+  // Type of token by usage as authenticator. The only currently supported value
+  // is "Bearer".
+  string token_type = 3 [json_name = "token_type"];
+
+  // Expiration time in seconds, measured from the time of issuance.
+  int64 expires_in = 4 [json_name = "expires_in"];
+}
+
+// Custom error response for GetFederatedToken API. The error format is defined
+// by the OAuth2.0 spec (RFC 6749).
+message OAuth2Error {
+  // Required. Constant that indicates which error occurred.
+  string error = 1 [json_name = "error"];
+
+  // Human-readable description of the error.
+  string error_description = 2 [json_name = "error_description"];
+}
