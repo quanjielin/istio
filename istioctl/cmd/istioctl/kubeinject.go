@@ -291,6 +291,8 @@ istioctl kube-inject -f deployment.yaml -o deployment-injected.yaml --injectConf
 					IncludeInboundPorts:          includeInboundPorts,
 					ExcludeInboundPorts:          excludeInboundPorts,
 					DebugMode:                    debugMode,
+					SDSEnabled:                   meshConfig.SdsUdsPath != "",
+					EnableSdsTokenMount:          meshConfig.EnableSdsTokenMount,
 				}); err != nil {
 					return err
 				}

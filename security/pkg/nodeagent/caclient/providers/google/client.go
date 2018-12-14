@@ -66,6 +66,7 @@ func NewGoogleCAClient(endpoint string, tls bool) (caClientInterface.Client, err
 // CSR Sign calls Google CA to sign a CSR.
 func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token string,
 	certValidTTLInSec int64) ([]string /*PEM-encoded certificate chain*/, error) {
+	log.Infof("******start send CSR")
 	req := &gcapb.IstioCertificateRequest{
 		Csr:              string(csrPEM),
 		ValidityDuration: certValidTTLInSec,
@@ -83,6 +84,7 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		return nil, errors.New("invalid response cert chain")
 	}
 
+	log.Infof("******received cert chain %+v", resp.CertChain)
 	return resp.CertChain, nil
 }
 

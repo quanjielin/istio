@@ -75,6 +75,7 @@ func NewPlugin() plugin.Plugin {
 // ExchangeToken exchange oauth access token from trusted domain and k8s sa jwt.
 func (p Plugin) ExchangeToken(ctx context.Context, trustDomain, k8sSAjwt string) (
 	string /*access token*/, time.Time /*expireTime*/, error) {
+	log.Info("********start ExchangeToken")
 	// The resource name of the service account for which the credentials are requested,
 	// in the following format: projects/-/serviceAccounts/{ACCOUNT_EMAIL_OR_UNIQUEID}
 	// Similar to https://cloud.google.com/iam/credentials/reference/rest/v1/projects.serviceAccounts/generateAccessToken
@@ -92,6 +93,7 @@ func (p Plugin) ExchangeToken(ctx context.Context, trustDomain, k8sSAjwt string)
 	}
 
 	expireTime, _ := ptypes.Timestamp(r.ExpireTime)
+	log.Infof("********got gaia id %q", r.AccessToken)
 
 	return r.AccessToken, expireTime, nil
 }

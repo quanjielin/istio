@@ -183,23 +183,24 @@ func ProxyImageName(hub string, tag string, debug bool) string {
 // Params describes configurable parameters for injecting istio proxy
 // into a kubernetes resource.
 type Params struct {
-	InitImage                    string                 `json:"initImage"`
-	RewriteAppHTTPProbe          bool                   `json:"rewriteAppHTTPProbe"`
-	ProxyImage                   string                 `json:"proxyImage"`
-	Verbosity                    int                    `json:"verbosity"`
-	SidecarProxyUID              uint64                 `json:"sidecarProxyUID"`
-	Version                      string                 `json:"version"`
-	EnableCoreDump               bool                   `json:"enableCoreDump"`
-	DebugMode                    bool                   `json:"debugMode"`
-	Privileged                   bool                   `json:"privileged"`
-	Mesh                         *meshconfig.MeshConfig `json:"-"`
-	ImagePullPolicy              string                 `json:"imagePullPolicy"`
-	StatusPort                   int                    `json:"statusPort"`
-	ReadinessInitialDelaySeconds uint32                 `json:"readinessInitialDelaySeconds"`
-	ReadinessPeriodSeconds       uint32                 `json:"readinessPeriodSeconds"`
-	ReadinessFailureThreshold    uint32                 `json:"readinessFailureThreshold"`
-	SDSEnabled                   bool                   `json:"sdsEnabled"`
-	EnableSdsTokenMount          bool                   `json:"enableSdsTokenMount"`
+	InitImage           string                 `json:"initImage"`
+	RewriteAppHTTPProbe bool                   `json:"rewriteAppHTTPProbe"`
+	ProxyImage          string                 `json:"proxyImage"`
+	Verbosity           int                    `json:"verbosity"`
+	SidecarProxyUID     uint64                 `json:"sidecarProxyUID"`
+	Version             string                 `json:"version"`
+	EnableCoreDump      bool                   `json:"enableCoreDump"`
+	DebugMode           bool                   `json:"debugMode"`
+	Privileged          bool                   `json:"privileged"`
+	Mesh                *meshconfig.MeshConfig `json:"-"`
+	ImagePullPolicy     string                 `json:"imagePullPolicy"`
+	StatusPort          int                    `json:"statusPort"`
+	//TrustDomain                  string                 `json:"trustDomain"`
+	ReadinessInitialDelaySeconds uint32 `json:"readinessInitialDelaySeconds"`
+	ReadinessPeriodSeconds       uint32 `json:"readinessPeriodSeconds"`
+	ReadinessFailureThreshold    uint32 `json:"readinessFailureThreshold"`
+	SDSEnabled                   bool   `json:"sdsEnabled"`
+	EnableSdsTokenMount          bool   `json:"enableSdsTokenMount"`
 	// Comma separated list of IP ranges in CIDR form. If set, only redirect outbound traffic to Envoy for these IP
 	// ranges. All outbound traffic can be redirected with the wildcard character "*". Defaults to "*".
 	IncludeIPRanges string `json:"includeIPRanges"`
