@@ -22,6 +22,8 @@ import (
 const (
 	// GoogleIAM is the name of the google IAM plugin.
 	GoogleIAM = "GoogleIAM"
+
+	GoogleTokenExchange = "GoogleTokenExchange"
 )
 
 // Plugin provides common interfaces so that authentication providers could choose to implement their specific logic.

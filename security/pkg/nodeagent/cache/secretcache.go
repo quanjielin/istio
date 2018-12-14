@@ -345,6 +345,8 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		}
 	}
 
+	log.Infof("********received exchanged token %q", exchangedToken)
+
 	// Generate the cert/key, send CSR to CA.
 	csrPEM, keyPEM, err := util.GenCSR(options)
 	if err != nil {
