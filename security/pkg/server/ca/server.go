@@ -59,6 +59,7 @@ type Server struct {
 // it is signed by the CA signing key.
 func (s *Server) CreateCertificate(ctx context.Context, request *pb.IstioCertificateRequest) (
 	*pb.IstioCertificateResponse, error) {
+	log.Info("********citadel receives CreateCertificate call")
 	caller := s.authenticate(ctx)
 	if caller == nil {
 		log.Warn("request authentication failure")

@@ -17,6 +17,7 @@ package configmap
 import (
 	"fmt"
 
+	"istio.io/istio/pkg/log"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,6 +45,7 @@ func NewController(namespace string, core corev1.CoreV1Interface) *Controller {
 
 // InsertCATLSRootCert updates the CA TLS root certificate in the configmap.
 func (c *Controller) InsertCATLSRootCert(value string) error {
+	log.Infof("********InsertCATLSRootCert to namespace %q, config map name %q", c.namespace, istioSecurityConfigMapName)
 	configmap, err := c.core.ConfigMaps(c.namespace).Get(istioSecurityConfigMapName, metav1.GetOptions{})
 	exists := true
 	if err != nil {
@@ -76,6 +78,7 @@ func (c *Controller) InsertCATLSRootCert(value string) error {
 
 // GetCATLSRootCert gets the CA TLS root certificate from the configmap.
 func (c *Controller) GetCATLSRootCert() (string, error) {
+	log.Infof("*******GetCATLSRootCert from namespace %q, configmap %q", c.namespace, istioSecurityConfigMapName)
 	configmap, err := c.core.ConfigMaps(c.namespace).Get(istioSecurityConfigMapName, metav1.GetOptions{})
 	if err != nil {
 		return "", fmt.Errorf("failed to get CA TLS root cert: %v", err)

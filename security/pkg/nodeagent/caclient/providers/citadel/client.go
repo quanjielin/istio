@@ -76,6 +76,7 @@ func (c *citadelClient) CSRSign(ctx context.Context, csrPEM []byte, token string
 		ValidityDuration: certValidTTLInSec,
 	}
 
+	log.Infof("********send CSRSign call to citadel with token %q", token)
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", token))
 	resp, err := c.client.CreateCertificate(ctx, req)
 	if err != nil {
