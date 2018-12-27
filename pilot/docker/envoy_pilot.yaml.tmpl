@@ -126,14 +126,35 @@ static_resources:
         common_tls_context:
           alpn_protocols:
           - http/1.1
-          tls_certificates:
-          - certificate_chain:
-              filename: /etc/certs/cert-chain.pem
-            private_key:
-              filename: /etc/certs/key.pem
-          validation_context:
-            trusted_ca:
-              filename: /etc/certs/root-cert.pem
+          tls_certificate_sds_secret_configs:
+          - name: default
+            sds_config:
+              api_config_source:
+                api_type: GRPC
+                grpc_services:
+                - google_grpc:
+                    target_uri: unix:/var/run/sds/uds_path
+                    channel_credentials:
+                      local_credentials: {}
+                    call_credentials:
+                    - google_compute_engine: {}
+                    stat_prefix: sdsstat
+          combined_validation_context:
+            default_validation_context:
+              verify_subject_alt_name: []
+            validation_context_sds_secret_config:
+              name: ROOTCA
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                  - google_grpc:
+                      target_uri: unix:/var/run/sds/uds_path
+                      channel_credentials:
+                        local_credentials: {}
+                      call_credentials:
+                      - google_compute_engine: {}
+                      stat_prefix: sdsstat
         require_client_certificate: true
 {{- end }}
     name: "15003"
@@ -204,15 +225,36 @@ static_resources:
       tls_context:
         common_tls_context:
           alpn_protocols:
-          - h2
-          tls_certificates:
-          - certificate_chain:
-              filename: /etc/certs/cert-chain.pem
-            private_key:
-              filename: /etc/certs/key.pem
-          validation_context:
-            trusted_ca:
-              filename: /etc/certs/root-cert.pem
+          - http/1.1
+          tls_certificate_sds_secret_configs:
+          - name: default
+            sds_config:
+              api_config_source:
+                api_type: GRPC
+                grpc_services:
+                - google_grpc:
+                    target_uri: unix:/var/run/sds/uds_path
+                    channel_credentials:
+                      local_credentials: {}
+                    call_credentials:
+                    - google_compute_engine: {}
+                    stat_prefix: sdsstat
+          combined_validation_context:
+            default_validation_context:
+              verify_subject_alt_name: []
+            validation_context_sds_secret_config:
+              name: ROOTCA
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                  - google_grpc:
+                      target_uri: unix:/var/run/sds/uds_path
+                      channel_credentials:
+                        local_credentials: {}
+                      call_credentials:
+                      - google_compute_engine: {}
+                      stat_prefix: sdsstat
         require_client_certificate: true
     name: "15011"
   - address:
@@ -280,14 +322,35 @@ static_resources:
         common_tls_context:
           alpn_protocols:
           - http/1.1
-          tls_certificates:
-          - certificate_chain:
-              filename: /etc/certs/cert-chain.pem
-            private_key:
-              filename: /etc/certs/key.pem
-          validation_context:
-            trusted_ca:
-              filename: /etc/certs/root-cert.pem
+          tls_certificate_sds_secret_configs:
+          - name: default
+            sds_config:
+              api_config_source:
+                api_type: GRPC
+                grpc_services:
+                - google_grpc:
+                    target_uri: unix:/var/run/sds/uds_path
+                    channel_credentials:
+                      local_credentials: {}
+                    call_credentials:
+                    - google_compute_engine: {}
+                    stat_prefix: sdsstat
+          combined_validation_context:
+            default_validation_context:
+              verify_subject_alt_name: []
+            validation_context_sds_secret_config:
+              name: ROOTCA
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                  - google_grpc:
+                      target_uri: unix:/var/run/sds/uds_path
+                      channel_credentials:
+                        local_credentials: {}
+                      call_credentials:
+                      - google_compute_engine: {}
+                      stat_prefix: sdsstat
         require_client_certificate: true
     name: "15005"
   - address:
