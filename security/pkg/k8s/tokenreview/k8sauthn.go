@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"strings"
 
+	"istio.io/istio/pkg/log"
 	k8sauth "k8s.io/api/authentication/v1"
 )
 
@@ -70,6 +71,9 @@ func (authn *K8sSvcAcctAuthn) reviewServiceAccountAtK8sAPIServer(k8sAPIServerURL
 		Kind:       "TokenReview",
 		Spec:       specForSaValidationRequest{Token: jwt},
 	}
+	log.Infof("*******review token is %q \n", reviewerToken)
+	log.Infof("*******saReq is %+v \n", saReq)
+	log.Infof("*******k8sAPIServerURL is %q", k8sAPIServerURL)
 	saReqJSON, err := json.Marshal(saReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal the service account review request: %v", err)
@@ -100,11 +104,14 @@ func (authn *K8sSvcAcctAuthn) reviewServiceAccountAtK8sAPIServer(k8sAPIServerURL
 // Otherwise, return the error.
 // jwt: the JWT to validate
 func (authn *K8sSvcAcctAuthn) ValidateK8sJwt(jwt string) (string, error) {
+	log.Info("*******************ValidateK8sJwt is called")
 	resp, err := authn.reviewServiceAccountAtK8sAPIServer(authn.apiServerAddr, authn.apiServerCert,
 		authn.reviewerSvcAcct, jwt)
 	if err != nil {
 		return "", fmt.Errorf("failed to get a token review response: %v", err)
 	}
+	log.Infof("*******************reviewServiceAccountAtK8sAPIServer resp %+v", resp)
+
 	// Check that the JWT is valid
 	if !(resp.StatusCode == http.StatusOK ||
 		resp.StatusCode == http.StatusCreated ||

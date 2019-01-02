@@ -70,6 +70,7 @@ type Server struct {
 // it is signed by the CA signing key.
 func (s *Server) CreateCertificate(ctx context.Context, request *pb.IstioCertificateRequest) (
 	*pb.IstioCertificateResponse, error) {
+	log.Info("******CreateCertificate is called")
 	caller := s.authenticate(ctx)
 	if caller == nil {
 		log.Warn("request authentication failure")
@@ -272,8 +273,9 @@ func (s *Server) authenticate(ctx context.Context) *authenticate.Caller {
 	// TODO: apply different authenticators in specific order / according to configuration.
 	for _, authn := range s.authenticators {
 		if u, err := authn.Authenticate(ctx); u != nil {
-			log.Infof("Authentication failed: %v", err)
 			return u
+		} else {
+			log.Infof("Authentication failed: %v", err)
 		}
 	}
 	return nil

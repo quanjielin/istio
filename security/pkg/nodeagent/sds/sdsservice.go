@@ -111,6 +111,7 @@ func (s *sdsservice) register(rpcs *grpc.Server) {
 }
 
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Info("*********receive StreamSecrets request")
 	token := ""
 	var ctx context.Context
 	if !s.skipToken {
@@ -122,6 +123,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 		}
 		token = t
 	}
+	log.Infof("*********receive token %q", token)
 
 	var receiveError error
 	reqChannel := make(chan *xdsapi.DiscoveryRequest, 1)

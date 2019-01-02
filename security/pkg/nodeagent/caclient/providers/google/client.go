@@ -102,6 +102,7 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		return nil, errors.New("invalid response cert chain")
 	}
 
+	log.Infof("********received cert chain %q", resp.CertChain)
 	return resp.CertChain, nil
 }
 
