@@ -42,6 +42,7 @@ const (
 	istioInstallDir                = "install/kubernetes"
 	nonAuthInstallFile             = "istio.yaml"
 	authInstallFile                = "istio-auth.yaml"
+	authSdsInstallFile             = "istio-auth-sds.yaml"
 	nonAuthWithoutMCPInstallFile   = "istio-mcp.yaml"
 	authWithoutMCPInstallFile      = "istio-auth-mcp.yaml"
 	nonAuthInstallFileNamespace    = "istio-one-namespace.yaml"
@@ -90,6 +91,7 @@ var (
 	sidecarInjectorHub = flag.String("sidecar_injector_hub", os.Getenv("HUB"), "Sidecar injector hub")
 	sidecarInjectorTag = flag.String("sidecar_injector_tag", os.Getenv("TAG"), "Sidecar injector tag")
 	authEnable         = flag.Bool("auth_enable", false, "Enable auth")
+	authSdsEnable      = flag.Bool("auth_sds_enable", false, "Enable auth through SDS")
 	rbacEnable         = flag.Bool("rbac_enable", true, "Enable rbac")
 	localCluster       = flag.Bool("use_local_cluster", false,
 		"If true any LoadBalancer type services will be converted to a NodePort service during testing. If running on minikube, this should be set to true")
@@ -151,6 +153,7 @@ type KubeInfo struct {
 	localCluster     bool
 	namespaceCreated bool
 	AuthEnabled      bool
+	AuthSdsEnabled   bool
 	RBACEnabled      bool
 
 	// Istioctl installation
@@ -178,7 +181,11 @@ func getClusterWideInstallFile() string {
 	var istioYaml string
 	if *authEnable {
 		if *useMCP {
-			istioYaml = authInstallFile
+			if *authSdsEnable {
+				istioYaml = authSdsInstallFile
+			} else {
+				istioYaml = authInstallFile
+			}
 		} else {
 			istioYaml = authWithoutMCPInstallFile
 		}
@@ -288,6 +295,7 @@ func newKubeInfo(tmpDir, runID, baseVersion string) (*KubeInfo, error) {
 		AppManager:       a,
 		RemoteAppManager: aRemote,
 		AuthEnabled:      *authEnable,
+		AuthSdsEnabled:   *authSdsEnable,
 		RBACEnabled:      *rbacEnable,
 		ReleaseDir:       releaseDir,
 		BaseVersion:      baseVersion,
@@ -479,6 +487,7 @@ func (k *KubeInfo) Teardown() error {
 			istioYaml := getClusterWideInstallFile()
 
 			testIstioYaml := filepath.Join(k.TmpDir, "yaml", istioYaml)
+			log.Infof("*******use istio yaml %q", testIstioYaml)
 
 			if err := util.KubeDelete(k.Namespace, testIstioYaml, k.KubeConfig); err != nil {
 				log.Infof("Safe to ignore resource not found errors in kubectl delete -f %s", testIstioYaml)
