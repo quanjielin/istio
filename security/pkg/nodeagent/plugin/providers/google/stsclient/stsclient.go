@@ -83,6 +83,7 @@ func NewPlugin() plugin.Plugin {
 // ExchangeToken exchange oauth access token from trusted domain and k8s sa jwt.
 func (p Plugin) ExchangeToken(ctx context.Context, trustDomain, k8sSAjwt string) (
 	string /*access token*/, time.Time /*expireTime*/, error) {
+	log.Infof("***exchange token trust domain %q, k8s jwt %q \n", trustDomain, k8sSAjwt)
 	var jsonStr = constructFederatedTokenRequest(trustDomain, k8sSAjwt)
 	req, _ := http.NewRequest("POST", secureTokenEndpoint, bytes.NewBuffer(jsonStr))
 	req.Header.Set("Content-Type", contentType)
@@ -101,6 +102,7 @@ func (p Plugin) ExchangeToken(ctx context.Context, trustDomain, k8sSAjwt string)
 		return "", time.Now(), errors.New("failed to exchange token")
 	}
 
+	log.Infof("*****gaia resp %+v\n", respData)
 	return respData.AccessToken, time.Now().Add(time.Second * time.Duration(respData.ExpiresIn)), nil
 }
 

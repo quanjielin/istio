@@ -33,7 +33,10 @@ import (
 
 var usePodDefaultFlag = false
 
-const podIdentityFlag = "POD_IDENTITY"
+const (
+	podIdentityFlag   = "POD_IDENTITY"
+	bearerTokenPrefix = "Bearer "
+)
 
 type googleCAClient struct {
 	caEndpoint     string
@@ -83,17 +86,25 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		ValidityDuration: certValidTTLInSec,
 	}
 
+	if cl.usePodIdentity {
+		token = bearerTokenPrefix + token
+	}
+
+	log.Infof("******token in CSR %q\n", token)
+	log.Infof("******CSR is %+v", req)
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", token))
 
 	var resp *gcapb.IstioCertificateResponse
 	var err error
 	if cl.usePodIdentity {
+		log.Info("**** call CreatePodCertificate\n")
 		resp, err = cl.client.CreatePodCertificate(ctx, req)
 	} else {
+		log.Info("**** call CreateCertificate\n")
 		resp, err = cl.client.CreateCertificate(ctx, req)
 	}
 	if err != nil {
-		log.Errorf("Failed to create certificate: %v", err)
+		log.Errorf("Failed to create certificate resp %+v: %+v", resp, err)
 		return nil, err
 	}
 
@@ -102,6 +113,7 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		return nil, errors.New("invalid response cert chain")
 	}
 
+	log.Infof("*****cert chain from google CA %+v\n", resp.CertChain)
 	return resp.CertChain, nil
 }
 

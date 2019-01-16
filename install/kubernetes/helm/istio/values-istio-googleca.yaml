@@ -11,12 +11,14 @@ global:
     udsPath: "unix:/var/run/sds/uds_path"
     useTrustworthyJwt: true 
 
-  trustDomain: ""
+  trustDomain: "kube-federating-id@istionodeagenttestproj2.iam.gserviceaccount.com"
 
 nodeagent:
   enabled: true
   image: node-agent-k8s
   env:
     CA_PROVIDER: "GoogleCA"
-    CA_ADDR: "istioca.googleapis.com:443"
+    #CA_ADDR: "istioca.googleapis.com:443"
+    CA_ADDR: "staging-qual-istioca.sandbox.googleapis.com:443"
     Plugins: "GoogleTokenExchange"
+    POD_IDENTITY: true

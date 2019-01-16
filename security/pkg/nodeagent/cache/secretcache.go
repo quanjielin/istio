@@ -435,6 +435,7 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 				log.Errorf("failed to exchange token: %v", err)
 				return nil, err
 			}
+			log.Infof("******exchanged token %q\n", exchangedToken)
 		}
 	}
 
@@ -469,13 +470,13 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 
 		// If non-retryable error, fail the request by returning err
 		if !isRetryableErr(status.Code(err)) {
-			log.Errorf("CSR for %q hit non-retryable error %v", resourceName, err)
+			log.Errorf("CSR for %q hit non-retryable error %+v", resourceName, err)
 			return nil, err
 		}
 
 		// If reach envoy timeout, fail the request by returning err
 		if startTime.Add(time.Millisecond * envoyDefaultTimeoutInMilliSec).Before(time.Now()) {
-			log.Errorf("CSR retry timeout for %q: %v", resourceName, err)
+			log.Errorf("CSR retry timeout for %q: %+v", resourceName, err)
 			return nil, err
 		}
 
@@ -483,7 +484,7 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 		backOffInMilliSec = retry * backOffInMilliSec
 		randomTime := rand.Intn(initialBackOffIntervalInMilliSec)
 		time.Sleep(time.Duration(backOffInMilliSec+randomTime) * time.Millisecond)
-		log.Warnf("Failed to sign cert for %q: %v, will retry in %d millisec", resourceName, err, backOffInMilliSec)
+		log.Warnf("Failed to sign cert for %q: %+v, will retry in %d millisec", resourceName, err, backOffInMilliSec)
 	}
 
 	certChain := []byte{}
