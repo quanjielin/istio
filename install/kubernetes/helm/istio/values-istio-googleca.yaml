@@ -9,7 +9,7 @@ global:
   sds:
     enabled: true
     udsPath: "unix:/var/run/sds/uds_path"
-    useTrustworthyJwt: true 
+    #useTrustworthyJwt: true 
 
   trustDomain: ""
 
@@ -19,4 +19,4 @@ nodeagent:
   env:
     CA_PROVIDER: "GoogleCA"
     CA_ADDR: "istioca.googleapis.com:443"
-    Plugins: "GoogleTokenExchange"
+    #Plugins: "GoogleTokenExchange"
