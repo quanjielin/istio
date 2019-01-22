@@ -16,6 +16,9 @@ global:
 nodeagent:
   enabled: true
   image: node-agent-k8s
+  args:
+  - --log_output_level
+  - "default:debug"
   env:
     CA_PROVIDER: "GoogleCA"
     CA_ADDR: "istioca.googleapis.com:443"

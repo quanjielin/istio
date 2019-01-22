@@ -105,6 +105,7 @@ func (s *sdsservice) register(rpcs *grpc.Server) {
 }
 
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Debug("*****StreamSecrets is called\n")
 	token := ""
 	var ctx context.Context
 	if !s.skipToken {
@@ -116,6 +117,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 		}
 		token = t
 	}
+	log.Debugf("*****received token is %q\n", token)
 
 	var receiveError error
 	reqChannel := make(chan *xdsapi.DiscoveryRequest, 1)
@@ -150,7 +152,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 			// request's <token, resourceName, Version>, then this request is a confirmation request.
 			// nodeagent stops sending response to envoy in this case.
 			if discReq.VersionInfo != "" && s.st.SecretExist(discReq.Node.Id, resourceName, token, discReq.VersionInfo) {
-				log.Debugf("Received SDS ACK from %q", discReq.Node.Id)
+				log.Debugf("Received SDS ACK from %q, version %q, token %q\n", discReq.Node.Id, discReq.VersionInfo, token)
 				continue
 			}
 
