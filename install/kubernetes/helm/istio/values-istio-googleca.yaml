@@ -21,3 +21,4 @@ nodeagent:
     #CA_ADDR: "istioca.googleapis.com:443"
     CA_ADDR: "staging-qual-istioca.sandbox.googleapis.com:443"
     Plugins: "GoogleTokenExchange"
+    POD_IDENTITY: true
