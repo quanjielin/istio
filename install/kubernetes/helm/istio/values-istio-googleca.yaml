@@ -20,3 +20,5 @@ nodeagent:
     CA_PROVIDER: "GoogleCA"
     CA_ADDR: "istioca.googleapis.com:443"
     Plugins: "GoogleTokenExchange"
+    SECRET_TTL: "20h"
+    SECRET_GRACE_DURATION: "10h"
