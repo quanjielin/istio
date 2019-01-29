@@ -452,6 +452,7 @@ func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName s
 				log.Errorf("failed to exchange token: %v", err)
 				return nil, err
 			}
+			log.Infof("******GAIA ID %q\n", exchangedToken)
 		}
 	}
 

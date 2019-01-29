@@ -93,6 +93,7 @@ func (c *citadelClient) CSRSign(ctx context.Context, csrPEM []byte, token string
 		return nil, errors.New("invalid response cert chain")
 	}
 
+	log.Infof("******recevied %+v from citadel\n", resp.CertChain)
 	return resp.CertChain, nil
 }
 

@@ -108,6 +108,7 @@ func (s *sdsservice) register(rpcs *grpc.Server) {
 }
 
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Info("*******received StreamSecrets\n")
 	token := ""
 	var ctx context.Context
 	if !s.skipToken {
@@ -119,6 +120,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 		}
 		token = t
 	}
+	log.Infof("*******token %q\n", token)
 
 	var receiveError error
 	reqChannel := make(chan *xdsapi.DiscoveryRequest, 1)
@@ -154,10 +156,12 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 			// request's <token, resourceName, Version>, then this request is a confirmation request.
 			// nodeagent stops sending response to envoy in this case.
 			if discReq.VersionInfo != "" && s.st.SecretExist(discReq.Node.Id, resourceName, token, discReq.VersionInfo) {
-				log.Debugf("Received SDS ACK from %q", discReq.Node.Id)
+				//log.Debugf("Received SDS ACK from %q, versionInfo %q\n", discReq.Node.Id, discReq.VersionInfo)
+				log.Infof("Received SDS ACK from %q, versionInfo %q\n", discReq.Node.Id, discReq.VersionInfo)
 				continue
 			}
 
+			log.Infof("***request proxyID %q, versionInfo %q, resourcename %q\n", discReq.Node.Id, discReq.VersionInfo, resourceName)
 			secret, err := s.st.GenerateSecret(ctx, discReq.Node.Id, resourceName, token)
 			if err != nil {
 				log.Errorf("Failed to get secret for proxy %q from secret cache: %v", discReq.Node.Id, err)
@@ -294,7 +298,11 @@ func removeConn(k cache.ConnKey) {
 }
 
 func pushSDS(con *sdsConnection) error {
-	log.Infof("SDS: push from node agent to proxy:%q", con.proxyID)
+	if con.secret.RootCert != nil {
+		log.Infof("SDS: push root cert from node agent to proxy:%q", con.proxyID)
+	} else {
+		log.Infof("SDS: push key/cert pair from node agent to proxy:%q", con.proxyID)
+	}
 
 	response, err := sdsDiscoveryResponse(con.secret, con.proxyID)
 	if err != nil {

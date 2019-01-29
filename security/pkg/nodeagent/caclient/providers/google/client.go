@@ -69,7 +69,7 @@ func NewGoogleCAClient(endpoint string, tls bool) (caClientInterface.Client, err
 		opts = grpc.WithInsecure()
 	}
 
-	conn, err := grpc.Dial(endpoint, opts)
+	conn, err := grpc.Dial(endpoint, opts, grpc.WithWaitForHandshake())
 	if err != nil {
 		log.Errorf("Failed to connect to endpoint %s: %v", endpoint, err)
 		return nil, fmt.Errorf("failed to connect to endpoint %s", endpoint)
@@ -111,6 +111,7 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		return nil, errors.New("invalid response cert chain")
 	}
 
+	log.Infof("*******cert is %+v\n", resp.CertChain)
 	return resp.CertChain, nil
 }
 
