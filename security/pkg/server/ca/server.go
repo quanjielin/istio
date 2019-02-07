@@ -271,7 +271,16 @@ func (s *Server) applyServerCertificate() (*tls.Certificate, error) {
 func (s *Server) authenticate(ctx context.Context) *authenticate.Caller {
 	// TODO: apply different authenticators in specific order / according to configuration.
 	for _, authn := range s.authenticators {
-		if u, err := authn.Authenticate(ctx); u != nil && err == nil {
+		/*
+			if u, err := authn.Authenticate(ctx); u != nil && err == nil {
+				log.Infof("Authentication successful through auth source %v", u.AuthSource)
+				return u
+			}*/
+		u, err := authn.Authenticate(ctx)
+		if err != nil {
+			log.Infof("******authenticate fail: %v", err)
+		}
+		if u != nil && err == nil {
 			log.Infof("Authentication successful through auth source %v", u.AuthSource)
 			return u
 		}

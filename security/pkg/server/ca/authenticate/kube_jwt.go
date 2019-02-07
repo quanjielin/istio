@@ -20,6 +20,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"istio.io/istio/pkg/log"
 	"istio.io/istio/security/pkg/k8s/tokenreview"
 )
 
@@ -58,10 +59,13 @@ func NewKubeJWTAuthenticator(k8sAPIServerURL, caCertPath, jwtPath, trustDomain s
 // Authenticate authenticates the call using the K8s JWT from the context.
 // The returned Caller.Identities is in SPIFFE format.
 func (a *KubeJWTAuthenticator) Authenticate(ctx context.Context) (*Caller, error) {
+	log.Infof("*****KubeJWTAuthenticator starts\n")
 	targetJWT, err := extractBearerToken(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("target JWT extraction error: %v", err)
 	}
+
+	log.Infof("*****KubeJWTAuthenticator jwt %q\n", targetJWT)
 	id, err := a.client.ValidateK8sJwt(targetJWT)
 	if err != nil {
 		return nil, fmt.Errorf("failed to validate the JWT: %v", err)
