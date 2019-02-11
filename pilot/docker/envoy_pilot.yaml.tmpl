@@ -214,6 +214,52 @@ static_resources:
             trusted_ca:
               filename: /etc/certs/root-cert.pem
         require_client_certificate: true
+      tls_context:
+        common_tls_context:
+          alpn_protocols:
+          - h2
+          tls_certificate_sds_secret_configs:
+          - name: default
+            sds_config:
+              api_config_source:
+                api_type: GRPC
+                grpc_services:
+                - google_grpc:
+                    target_uri: unix:/var/run/sds/uds_path
+                    channel_credentials:
+                      local_credentials: {}
+                    call_credentials:
+                    - from_plugin:
+                        name: envoy.grpc_credentials.file_based_metadata
+                        config:
+                          header_key: istio_sds_credentail_header-bin
+                          secret_data:
+                            filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                    stat_prefix: sdsstat
+                    credentials_factory_name: envoy.grpc_credentials.file_based_metadata
+          combined_validation_context:
+            default_validation_context:
+              verify_subject_alt_name: []
+            validation_context_sds_secret_config:
+              name: ROOTCA
+              sds_config:
+                api_config_source:
+                  api_type: GRPC
+                  grpc_services:
+                  - google_grpc:
+                      target_uri: unix:/var/run/sds/uds_path
+                      channel_credentials:
+                        local_credentials: {}
+                      call_credentials:
+                      - from_plugin:
+                          name: envoy.grpc_credentials.file_based_metadata
+                          config:
+                            header_key: istio_sds_credentail_header-bin
+                            secret_data:
+                              filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                      stat_prefix: sdsstat
+                      credentials_factory_name: envoy.grpc_credentials.file_based_metadata
+        require_client_certificate: true
     name: "15011"
   - address:
       socket_address:

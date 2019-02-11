@@ -179,8 +179,13 @@ spec:
           - name: istio-certs
             mountPath: /etc/certs
             readOnly: true
+          - name: sds-uds-path
+            mountPath: /var/run/sds
 {{- end }}
       volumes:
+      - hostPath:
+          path: /var/run/sds
+        name: sds-uds-path
       - name: config-volume
         configMap:
           name: istio
