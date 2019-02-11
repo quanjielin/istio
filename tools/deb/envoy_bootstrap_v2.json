@@ -151,7 +151,7 @@
                                       "name":"envoy.grpc_credentials.file_based_metadata",
                                       "config":{
                                         "secret_data":{
-                                          "filename":"/var/run/secrets/kubernetes.io/serviceaccount/token"
+                                          "filename":"/var/run/secrets/tokens/istio-token"
                                         },
                                         "header_key":"istio_sds_credentail_header-bin"
                                       }
@@ -195,7 +195,7 @@
                                       "name":"envoy.grpc_credentials.file_based_metadata",
                                       "config":{
                                         "secret_data":{
-                                          "filename":"/var/run/secrets/kubernetes.io/serviceaccount/token"
+                                          "filename":"/var/run/secrets/tokens/istio-token"
                                         },
                                         "header_key":"istio_sds_credentail_header-bin"
                                       }

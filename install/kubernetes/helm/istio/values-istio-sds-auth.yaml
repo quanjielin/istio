@@ -1,5 +1,5 @@
 global:
-  controlPlaneSecurityEnabled: false
+  controlPlaneSecurityEnabled: true
 
   mtls:
     # Default setting for service-to-service mtls. Can be set explicitly using
@@ -18,3 +18,6 @@ nodeagent:
     CA_PROVIDER: "Citadel"
     CA_ADDR: "istio-citadel:8060"
     VALID_TOKEN: true
+    SECRET_GRACE_DURATION: "2m"
+    SECRET_JOB_RUN_INTERVAL: "1m"
+    SECRET_TTL: "4m"

@@ -234,7 +234,7 @@ static_resources:
                         config:
                           header_key: istio_sds_credentail_header-bin
                           secret_data:
-                            filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                            filename: "/var/run/secrets/tokens/istio-token"
                     stat_prefix: sdsstat
                     credentials_factory_name: envoy.grpc_credentials.file_based_metadata
           combined_validation_context:
@@ -256,7 +256,7 @@ static_resources:
                           config:
                             header_key: istio_sds_credentail_header-bin
                             secret_data:
-                              filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+                              filename: "/var/run/secrets/tokens/istio-token"
                       stat_prefix: sdsstat
                       credentials_factory_name: envoy.grpc_credentials.file_based_metadata
         require_client_certificate: true

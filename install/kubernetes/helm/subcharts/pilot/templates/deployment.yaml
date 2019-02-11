@@ -181,11 +181,21 @@ spec:
             readOnly: true
           - name: sds-uds-path
             mountPath: /var/run/sds
+          - name: istio-token
+            mountPath: /var/run/secrets/tokens          
 {{- end }}
       volumes:
       - hostPath:
           path: /var/run/sds
         name: sds-uds-path
+      - name: istio-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: {{ $.Values.global.trustDomain }}
+              expirationSeconds: 43200
+              path: istio-token
       - name: config-volume
         configMap:
           name: istio
