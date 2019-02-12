@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -261,8 +262,13 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support multiple network interfaces
 	meta["ISTIO_META_INSTANCE_IPS"] = strings.Join(nodeIPs, ",")
+	opts["sdsEnabled"] = false
 
-	opts["sdsEnabled"] = meta["WORKLOAD_SDS_ENABLED"]
+	se, err := strconv.ParseBool(meta["WORKLOAD_SDS_ENABLED"])
+	if err == nil && se == true {
+		opts["sdsEnabled"] = true
+	}
+
 	opts["k8sJwtPath"] = meta["K8S_JWT_PATH"]
 
 	log.Infof("*****sds enabled %v", opts["sdsEnabled"])
