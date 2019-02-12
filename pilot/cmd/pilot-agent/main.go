@@ -279,7 +279,12 @@ var (
 
 					opts["K8sSAJWTPath"] = k8sServiceAccountJWTPath
 
-					log.Infof("*****k8s jwt path is %q", opts["K8sSAJWTPath"])
+					if sdsEnabled {
+						opts["SDSEnabled"] = "enable"
+					}
+
+					log.Infof("*****k8s jwt path is %q\n", opts["K8sSAJWTPath"])
+					log.Infof("*****sds enabled is %q\n", opts["SDSEnabled"])
 
 					tmpl, err := template.ParseFiles(templateFile)
 					if err != nil {
