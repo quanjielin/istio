@@ -40,6 +40,9 @@ const (
 	// EpochFileTemplate is a template for the root config JSON
 	EpochFileTemplate = "envoy-rev%d.json"
 	DefaultCfgDir     = "/var/lib/istio/envoy/envoy_bootstrap_tmpl.json"
+
+	//DefaultK8s     = "/var/lib/istio/envoy/envoy_bootstrap_tmpl.json"
+
 	// MaxClusterNameLength is the maximum cluster name length
 	MaxClusterNameLength = 189 // TODO: use MeshConfig.StatNameLength instead
 
@@ -246,6 +249,9 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support passing extra info from node environment as metadata
 	meta := getNodeMetaData(localEnv)
+	for k, v := range meta {
+		log.Infof("****meta key %q, val %q\n", k, v)
+	}
 
 	if inclusionPatterns, ok := meta[EnvoyStatsMatcherInclusionPatterns]; ok {
 		opts["inclusionPatterns"] = strings.Split(inclusionPatterns, ",")
@@ -255,6 +261,12 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support multiple network interfaces
 	meta["ISTIO_META_INSTANCE_IPS"] = strings.Join(nodeIPs, ",")
+
+	opts["sdsEnabled"] = meta["SDS_ENABLED"]
+	opts["k8sJwtPath"] = meta["K8S_JWT_PATH"]
+
+	log.Infof("*****sds enabled %v", opts["sdsEnabled"])
+	log.Infof("*****sds jwt path is %q", opts["k8sJwtPath"])
 
 	ba, err := json.Marshal(meta)
 	if err != nil {
