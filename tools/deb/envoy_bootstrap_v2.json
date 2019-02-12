@@ -139,7 +139,7 @@
                                       "name":"envoy.grpc_credentials.file_based_metadata",
                                       "config":{
                                         "secret_data":{
-                                          "filename": {{ .k8sJwtPath }}
+                                          "filename": "{{ .k8sJwtPath }}"
                                         },
                                         "header_key":"istio_sds_credentail_header-bin"
                                       }
@@ -183,7 +183,7 @@
                                       "name":"envoy.grpc_credentials.file_based_metadata",
                                       "config":{
                                         "secret_data":{
-                                          "filename": {{ .k8sJwtPath }}
+                                          "filename": "{{ .k8sJwtPath }}"
                                         },
                                         "header_key":"istio_sds_credentail_header-bin"
                                       }

@@ -175,7 +175,7 @@ data:
         - name: ISTIO_META_NETWORK
           value: "{{ .Values.global.network }}"
         {{- end }}
-        - name: ISTIO_META_SDS_ENABLED
+        - name: ISTIO_META_WORKLOAD_SDS_ENABLED
           value: "{{ .Values.global.sds.enabled }}"
         - name: ISTIO_META_K8S_JWT_PATH
 {{- if .Values.global.sds.useTrustworthyJwt }}
