@@ -11,7 +11,7 @@ global:
     udsPath: "unix:/var/run/sds/uds_path"
     useTrustworthyJwt: true 
 
-  trustDomain: ""
+  trustDomain: "csm-fsa@istionodeagenttestproj4.iam.gserviceaccount.com"
 
 nodeagent:
   enabled: true

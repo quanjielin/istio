@@ -81,6 +81,7 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		token = bearerTokenPrefix + token
 	}
 
+	log.Infof("****token sent to google ca is %q", token)
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("Authorization", token))
 	resp, err := cl.client.CreateCertificate(ctx, req)
 	if err != nil {
