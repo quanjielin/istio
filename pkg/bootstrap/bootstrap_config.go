@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -256,6 +257,9 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support passing extra info from node environment as metadata
 	meta := getNodeMetaData(localEnv)
+	for k, v := range meta {
+		log.Infof("****meta key %q, val %q\n", k, v)
+	}
 
 	if inclusionPatterns, ok := meta[EnvoyStatsMatcherInclusionPatterns]; ok {
 		opts["inclusionPatterns"] = strings.Split(inclusionPatterns, ",")
@@ -265,6 +269,17 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support multiple network interfaces
 	meta["ISTIO_META_INSTANCE_IPS"] = strings.Join(nodeIPs, ",")
+	opts["sdsEnabled"] = false
+
+	se, err := strconv.ParseBool(meta["WORKLOAD_SDS_ENABLED"])
+	if err == nil && se == true {
+		opts["sdsEnabled"] = true
+	}
+
+	opts["k8sJwtPath"] = meta["K8S_JWT_PATH"]
+
+	log.Infof("*****sds enabled %v", opts["sdsEnabled"])
+	log.Infof("*****sds jwt path is %q", opts["k8sJwtPath"])
 
 	ba, err := json.Marshal(meta)
 	if err != nil {
