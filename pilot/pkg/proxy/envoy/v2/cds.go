@@ -22,6 +22,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/log"
 )
 
 // clusters aggregate a DiscoveryResponse for pushing.
@@ -71,6 +72,13 @@ func (s *DiscoveryServer) pushCds(con *XdsConnection, push *model.PushContext, v
 }
 
 func (s *DiscoveryServer) generateRawClusters(node *model.Proxy, push *model.PushContext) ([]*xdsapi.Cluster, error) {
+	sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
+	if annotation, ok := node.Metadata[sdsEnableAnnotation]; ok {
+		log.Infof("-----generateRawClusters enableSDS annotation %q for proxy %q", annotation, node.ID)
+	} else {
+		log.Infof("-----generateRawClusters enableSDS annotation disabled for proxy %q", node.ID)
+	}
+
 	rawClusters, err := s.ConfigGenerator.BuildClusters(s.Env, node, push)
 	if err != nil {
 		adsLog.Warnf("CDS: Failed to generate clusters for node %s: %v", node.ID, err)
