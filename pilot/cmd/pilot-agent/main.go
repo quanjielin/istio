@@ -288,10 +288,27 @@ var (
 				log.Infof("Effective config: %s", out)
 			}
 
+			envs := os.Environ()
+			sidecarSdsEnabled := false
+			prefix := "ISTIO_META_WORKLOAD_SDS_ENABLED"
+			for _, env := range envs {
+				if strings.HasPrefix(env, prefix) {
+					parts := strings.SplitN(env, "=", 2)
+					if len(parts) != 2 {
+						continue
+					}
+					sidecarSdsEnabled, _ = strconv.ParseBool(parts[1])
+				}
+			}
+
+			log.Infof("*******sidecarSdsEnabled %v", sidecarSdsEnabled)
+			log.Infof("*********controlplane sds %v", sdsEnabled)
+			sdsset := sidecarSdsEnabled || sdsEnabled
+
 			log.Infof("Monitored certs: %#v", tlsCertsToWatch)
 			// since Envoy needs the certs for mTLS, we wait for them to become available before starting it
 			// skip waiting cert if sds is enabled, otherwise it takes long time for pod to start.
-			if controlPlaneAuthPolicy == meshconfig.AuthenticationPolicy_MUTUAL_TLS.String() && !sdsEnabled {
+			if controlPlaneAuthPolicy == meshconfig.AuthenticationPolicy_MUTUAL_TLS.String() && !sdsset {
 				for _, cert := range tlsCertsToWatch {
 					waitForCerts(cert, 2*time.Minute)
 				}

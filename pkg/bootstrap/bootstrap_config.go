@@ -269,6 +269,7 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support multiple network interfaces
 	meta["ISTIO_META_INSTANCE_IPS"] = strings.Join(nodeIPs, ",")
+
 	opts["sdsEnabled"] = false
 
 	se, err := strconv.ParseBool(meta["WORKLOAD_SDS_ENABLED"])
