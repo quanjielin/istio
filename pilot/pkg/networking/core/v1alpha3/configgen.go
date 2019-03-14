@@ -15,6 +15,7 @@
 package v1alpha3
 
 import (
+	"strconv"
 	"sync"
 
 	xdsapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -23,6 +24,7 @@ import (
 	"istio.io/istio/pilot/pkg/networking/plugin"
 	"istio.io/istio/pilot/pkg/networking/util"
 	"istio.io/istio/pkg/features/pilot"
+	"istio.io/istio/pkg/log"
 )
 
 type ConfigGeneratorImpl struct {
@@ -71,6 +73,7 @@ func (configgen *ConfigGeneratorImpl) BuildSharedPushState(env *model.Environmen
 				ConfigNamespace: ns,
 				Type:            model.Router,
 			}
+			log.Infof("************BuildSharedPushState dummyNode %+v, ns %q", dummyNode, ns)
 			clusters := configgen.buildOutboundClusters(env, &dummyNode, push)
 			configgen.gatewayCDSMutex.Lock()
 			// This is the default cds output for nodes without a locality
@@ -104,6 +107,7 @@ func (configgen *ConfigGeneratorImpl) buildSharedPushStateForSidecars(env *model
 				// services and destination rules
 				// The default CDS output for sidecars without locality. No need to take the mutex here
 				// because this is the only writer for this sidecar
+				log.Infof("************buildSharedPushStateForSidecars dummyNode %+v, ns %q", dummyNode, ns)
 				sc.CDSOutboundClusters = map[string][]*xdsapi.Cluster{util.NoProxyLocality: configgen.buildOutboundClusters(env, &dummyNode, push)}
 			}
 		}(ns, sidecarScopes)
@@ -121,5 +125,27 @@ func (configgen *ConfigGeneratorImpl) CanUsePrecomputedCDS(proxy *model.Proxy) b
 		return false
 	}
 
+	// recompute if sds annotation is added.
+	// TODO add cache.
+	sdsAnnotation := getSDSAnnotation(proxy)
+	if sdsAnnotation == true {
+		log.Infof("********recompute cds because sds annotation set for %q", proxy.ID)
+		return false
+	}
+
 	return networkView[model.UnnamedNetwork]
+}
+
+func getSDSAnnotation(node *model.Proxy) bool {
+	if node == nil {
+		return false
+	}
+
+	sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
+	if annotation, ok := node.Metadata[sdsEnableAnnotation]; ok {
+		se, _ := strconv.ParseBool(annotation)
+		return se
+	} else {
+		return false
+	}
 }

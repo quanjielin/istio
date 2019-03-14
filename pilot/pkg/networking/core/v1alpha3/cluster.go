@@ -75,6 +75,13 @@ func getDefaultCircuitBreakerThresholds(direction model.TrafficDirection) *v2Clu
 // Cluster type based on resolution
 // For inbound (sidecar only): Cluster for each inbound endpoint port and for each service port
 func (configgen *ConfigGeneratorImpl) BuildClusters(env *model.Environment, proxy *model.Proxy, push *model.PushContext) ([]*apiv2.Cluster, error) {
+	sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
+	if annotation, ok := proxy.Metadata[sdsEnableAnnotation]; ok {
+		log.Infof("*******BuildClusters enableSDS annotation enabled %q for proxy %q", annotation, proxy.ID)
+	} else {
+		log.Infof("*******BuildClusters enableSDS annotation disabled for proxy %q", proxy.ID)
+	}
+
 	clusters := make([]*apiv2.Cluster, 0)
 	instances := proxy.ServiceInstances
 
@@ -96,6 +103,8 @@ func (configgen *ConfigGeneratorImpl) BuildClusters(env *model.Environment, prox
 				}
 			}
 		}
+
+		log.Infof("*******recomputeOutboundClusters value is %v for %q", recomputeOutboundClusters, proxy.ID)
 
 		if recomputeOutboundClusters {
 			clusters = append(clusters, configgen.buildOutboundClusters(env, proxy, push)...)
@@ -165,9 +174,9 @@ func normalizeClusters(push *model.PushContext, proxy *model.Proxy, clusters []*
 func (configgen *ConfigGeneratorImpl) buildOutboundClusters(env *model.Environment, proxy *model.Proxy, push *model.PushContext) []*apiv2.Cluster {
 	sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
 	if annotation, ok := proxy.Metadata[sdsEnableAnnotation]; ok {
-		log.Infof("*******enableSDS annotation %q for proxy %q", annotation, proxy.ID)
+		log.Infof("*******buildOutboundClusters enableSDS annotation enabled %q for proxy %q", annotation, proxy.ID)
 	} else {
-		log.Infof("*******enableSDS annotation disabled for proxy %q", proxy.ID)
+		log.Infof("*******buildOutboundClusters enableSDS annotation disabled for proxy %q", proxy.ID)
 	}
 
 	clusters := make([]*apiv2.Cluster, 0)

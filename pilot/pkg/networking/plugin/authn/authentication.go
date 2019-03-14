@@ -89,6 +89,13 @@ func GetMutualTLS(policy *authn.Policy) *authn.MutualTls {
 
 // setupFilterChains sets up filter chains based on authentication policy.
 func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string, sdsUseTrustworthyJwt, sdsUseNormalJwt bool, meta map[string]string) []plugin.FilterChain {
+	sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
+	if annotation, ok := meta[sdsEnableAnnotation]; ok {
+		log.Infof("*******setupFilterChains annotation %q", annotation)
+	} else {
+		log.Infof("*******setupFilterChains annotation disabled for proxy")
+	}
+
 	if authnPolicy == nil || len(authnPolicy.Peers) == 0 {
 		return nil
 	}
