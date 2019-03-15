@@ -36,6 +36,8 @@ type ConfigGeneratorImpl struct {
 	// Must be rebuilt for each push epoch
 	PrecomputedOutboundClustersForGateways map[string]map[string][]*xdsapi.Cluster
 	// TODO: add others in future
+
+	sdsAnnotationCache sync.Map
 }
 
 func NewConfigGenerator(plugins []plugin.Plugin) *ConfigGeneratorImpl {
@@ -127,25 +129,44 @@ func (configgen *ConfigGeneratorImpl) CanUsePrecomputedCDS(proxy *model.Proxy) b
 
 	// recompute if sds annotation is added.
 	// TODO add cache.
-	sdsAnnotation := getSDSAnnotation(proxy)
-	if sdsAnnotation == true {
+	rs := configgen.reComputeSDS(proxy)
+	if rs == true {
+		// need to recompute, return false since precompute cannot be used.
 		log.Infof("********recompute cds because sds annotation set for %q", proxy.ID)
 		return false
 	}
 
-	return networkView[model.UnnamedNetwork]
+	usePrecompute := networkView[model.UnnamedNetwork]
+	if !usePrecompute {
+		// reset cache if precompute cds cannot be used
+		configgen.sdsAnnotationCache.Delete(proxy.ID)
+	}
+
+	return usePrecompute
 }
 
-func getSDSAnnotation(node *model.Proxy) bool {
+// return true if need to recompute.
+func (configgen *ConfigGeneratorImpl) reComputeSDS(node *model.Proxy) bool {
 	if node == nil {
 		return false
 	}
 
 	sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
-	if annotation, ok := node.Metadata[sdsEnableAnnotation]; ok {
-		se, _ := strconv.ParseBool(annotation)
-		return se
-	} else {
+	annotation, ok := node.Metadata[sdsEnableAnnotation]
+	if !ok {
 		return false
 	}
+	se, _ := strconv.ParseBool(annotation)
+	if se == false {
+		return false
+	}
+
+	// recompute on first time(cache not set)
+	if _, found := configgen.sdsAnnotationCache.Load(node.ID); !found {
+		configgen.sdsAnnotationCache.Store(node.ID, true)
+		return true
+	}
+
+	// cache already set, no need to recompute
+	return false
 }

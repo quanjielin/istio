@@ -922,8 +922,10 @@ func applyUpstreamTLSSettings(env *model.Environment, cluster *apiv2.Cluster, tl
 			Sni:              tls.Sni,
 		}
 
+		sdsEnableAnnotation := "sidecar.istio.io/enableSDS"
+		_, sdsannotationSet := metadata[sdsEnableAnnotation]
 		// Fallback to file mount secret instead of SDS if meshConfig.sdsUdsPath isn't set or tls.mode is TLSSettings_MUTUAL.
-		if env.Mesh.SdsUdsPath == "" || tls.Mode == networking.TLSSettings_MUTUAL {
+		if env.Mesh.SdsUdsPath == "" || tls.Mode == networking.TLSSettings_MUTUAL || !sdsannotationSet {
 			cluster.TlsContext.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_ValidationContext{
 				ValidationContext: certValidationContext,
 			}
