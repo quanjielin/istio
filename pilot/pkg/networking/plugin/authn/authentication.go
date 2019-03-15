@@ -113,7 +113,9 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string, sdsUseTrust
 		},
 		RequireClientCertificate: protovalue.BoolTrue,
 	}
-	if sdsUdsPath == "" {
+
+	_, sdsannotationset := meta[sdsEnableAnnotation]
+	if sdsUdsPath == "" || !sdsannotationset {
 		base := meta[pilot.BaseDir] + model.AuthCertsPath
 		tlsServerRootCert := model.GetOrDefaultFromMap(meta, model.NodeMetadataTLSServerRootCert, base+model.RootCertFilename)
 
