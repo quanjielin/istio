@@ -96,6 +96,10 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string, sdsUseTrust
 		log.Infof("*******setupFilterChains annotation disabled for proxy")
 	}
 
+	for k, v := range meta {
+		log.Infof("******meta data key %q value %q", k, v)
+	}
+
 	if authnPolicy == nil || len(authnPolicy.Peers) == 0 {
 		return nil
 	}

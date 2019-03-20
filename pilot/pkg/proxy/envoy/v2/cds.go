@@ -79,6 +79,10 @@ func (s *DiscoveryServer) generateRawClusters(node *model.Proxy, push *model.Pus
 		log.Infof("-----generateRawClusters enableSDS annotation disabled for proxy %q", node.ID)
 	}
 
+	for k, v := range node.Metadata {
+		log.Infof("******meta data key %q value %q for proxy %q", k, v, node.ID)
+	}
+
 	rawClusters, err := s.ConfigGenerator.BuildClusters(s.Env, node, push)
 	if err != nil {
 		adsLog.Warnf("CDS: Failed to generate clusters for node %s: %v", node.ID, err)
