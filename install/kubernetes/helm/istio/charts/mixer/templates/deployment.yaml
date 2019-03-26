@@ -12,11 +12,16 @@
       {{- if $.Values.global.sds.enabled }}
       - hostPath:
 <<<<<<< HEAD
+<<<<<<< HEAD
           path: /var/run/sds/uds_path
           type: Socket
 =======
           path: /var/run/sds
 >>>>>>> bootstrap poc on master
+=======
+          path: /var/run/sds/uds_path
+          type: Socket
+>>>>>>> socket
         name: sds-uds-path
       {{- if $.Values.global.sds.useTrustworthyJwt }}
       - name: istio-token
