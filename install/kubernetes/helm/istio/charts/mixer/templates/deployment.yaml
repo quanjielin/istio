@@ -11,7 +11,8 @@
           optional: true
       {{- if $.Values.global.sds.enabled }}
       - hostPath:
-          path: /var/run/sds
+          path: /var/run/sds/uds_path
+          type: Socket
         name: sds-uds-path
       {{- if $.Values.global.sds.useTrustworthyJwt }}
       - name: istio-token
@@ -167,7 +168,8 @@
           readOnly: true
         {{- if $.Values.global.sds.enabled }}
         - name: sds-uds-path
-          mountPath: /var/run/sds
+          mountPath: /var/run/sds/uds_path
+          readOnly: true
         {{- if $.Values.global.sds.useTrustworthyJwt }}
         - name: istio-token
           mountPath: /var/run/secrets/tokens
@@ -190,7 +192,8 @@
           optional: true
       {{- if $.Values.global.sds.enabled }}
       - hostPath:
-          path: /var/run/sds
+          path: /var/run/sds/uds_path
+          type: Socket
         name: sds-uds-path
       {{- if $.Values.global.sds.useTrustworthyJwt }}
       - name: istio-token
@@ -353,7 +356,8 @@
           readOnly: true
         {{- if $.Values.global.sds.enabled }}
         - name: sds-uds-path
-          mountPath: /var/run/sds
+          mountPath: /var/run/sds/uds_path
+          readOnly: true
         {{- if $.Values.global.sds.useTrustworthyJwt }}
         - name: istio-token
           mountPath: /var/run/secrets/tokens
