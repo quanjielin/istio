@@ -157,13 +157,12 @@ spec:
         {{- end }}
         {{- if $.Values.global.sds.enabled }}
           - --sdsEnabled=true
-        {{- else }}
-          - --sdsEnabled=false
-        {{- end }}
-        {{- if $.Values.global.sds.useTrustworthyJwt }}
-          - --k8sServiceAccountJWTPath="/var/run/secrets/tokens/istio-token"
-        {{- else }}
-          - --k8sServiceAccountJWTPath="/var/run/secrets/kubernetes.io/serviceaccount/token"
+          - --k8sServiceAccountJWTPath
+          {{- if $.Values.global.sds.useTrustworthyJwt }}
+          - "/var/run/secrets/tokens/istio-token"
+          {{- else }}
+          - "/var/run/secrets/kubernetes.io/serviceaccount/token"
+          {{- end }}
         {{- end }}
           env:
           - name: POD_NAME

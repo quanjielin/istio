@@ -11,17 +11,8 @@
           optional: true
       {{- if $.Values.global.sds.enabled }}
       - hostPath:
-<<<<<<< HEAD
-<<<<<<< HEAD
           path: /var/run/sds/uds_path
           type: Socket
-=======
-          path: /var/run/sds
->>>>>>> bootstrap poc on master
-=======
-          path: /var/run/sds/uds_path
-          type: Socket
->>>>>>> socket
         name: sds-uds-path
       {{- if $.Values.global.sds.useTrustworthyJwt }}
       - name: istio-token
@@ -143,13 +134,12 @@
       {{- end }}
       {{- if $.Values.global.sds.enabled }}
         - --sdsEnabled=true
-      {{- else }}
-        - --sdsEnabled=false
-      {{- end }}
-      {{- if $.Values.global.sds.useTrustworthyJwt }}
-        - --k8sServiceAccountJWTPath="/var/run/secrets/tokens/istio-token"
-      {{- else }}
-        - --k8sServiceAccountJWTPath="/var/run/secrets/kubernetes.io/serviceaccount/token"
+        - --k8sServiceAccountJWTPath
+        {{- if $.Values.global.sds.useTrustworthyJwt }}
+        - "/var/run/secrets/tokens/istio-token"
+        {{- else }}
+        - "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        {{- end }}
       {{- end }}
         env:
         - name: POD_NAME
@@ -332,13 +322,12 @@
       {{- end }}
       {{- if $.Values.global.sds.enabled }}
         - --sdsEnabled=true
-      {{- else }}
-        - --sdsEnabled=false
-      {{- end }}
-      {{- if $.Values.global.sds.useTrustworthyJwt }}
-        - --k8sServiceAccountJWTPath="/var/run/secrets/tokens/istio-token"
-      {{- else }}
-        - --k8sServiceAccountJWTPath="/var/run/secrets/kubernetes.io/serviceaccount/token"
+        - --k8sServiceAccountJWTPath
+        {{- if $.Values.global.sds.useTrustworthyJwt }}
+        - "/var/run/secrets/tokens/istio-token"
+        {{- else }}
+        - "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        {{- end }}
       {{- end }}
         env:
         - name: POD_NAME

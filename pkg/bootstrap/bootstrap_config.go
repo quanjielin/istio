@@ -272,14 +272,24 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 	// Support multiple network interfaces
 	meta["ISTIO_META_INSTANCE_IPS"] = strings.Join(nodeIPs, ",")
 
-	opts["sdsEnabled"] = false
+	/*
+		opts["sdsEnabled"] = false
 
-	se, err := strconv.ParseBool(meta["WORKLOAD_SDS_ENABLED"])
-	if err == nil && se == true {
-		opts["sdsEnabled"] = true
-	}
+		se, err := strconv.ParseBool(meta["WORKLOAD_SDS_ENABLED"])
+		if err == nil && se == true {
+			opts["sdsEnabled"] = true
+		}
 
-	opts["k8sJwtPath"] = meta["K8S_JWT_PATH"]
+		opts["k8sJwtPath"] = meta["K8S_JWT_PATH"]
+
+		log.Infof("*****sds enabled %v", opts["sdsEnabled"])
+		log.Infof("*****sds jwt path is %q", opts["k8sJwtPath"])
+	*/
+
+	opts["sdsEnabled"] = config.Sds.Enabled
+	opts["k8sJwtPath"] = config.Sds.K8SSaJwtPath
+	meta["WORKLOAD_SDS_ENABLED"] = strconv.FormatBool(config.Sds.Enabled)
+	meta["K8S_JWT_PATH"] = config.Sds.K8SSaJwtPath
 
 	log.Infof("*****sds enabled %v", opts["sdsEnabled"])
 	log.Infof("*****sds jwt path is %q", opts["k8sJwtPath"])
