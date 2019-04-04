@@ -344,14 +344,17 @@ var (
 						opts["DisableReportCalls"] = "true"
 					}
 
-					opts["K8sSAJWTPath"] = k8sServiceAccountJWTPath
-
+					if k8sServiceAccountJWTPath != "" {
+						opts["UseJWT"] = "enable"
+						opts["K8sSAJWTPath"] = k8sServiceAccountJWTPath
+					}
 					if sdsEnabled {
 						opts["SDSEnabled"] = "enable"
 					}
 
 					log.Infof("*****k8s jwt path is %q\n", opts["K8sSAJWTPath"])
 					log.Infof("*****sds enabled is %q\n", opts["SDSEnabled"])
+					log.Infof("*****UseJWT is %q\n", opts["UseJWT"])
 
 					tmpl, err := template.ParseFiles(templateFile)
 					if err != nil {

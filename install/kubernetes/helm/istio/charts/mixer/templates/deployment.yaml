@@ -137,7 +137,7 @@
         - --k8sServiceAccountJWTPath
         {{- if $.Values.global.sds.useTrustworthyJwt }}
         - "/var/run/secrets/tokens/istio-token"
-        {{- else }}
+        {{- else if $.Values.global.sds.useNormalJwt }}
         - "/var/run/secrets/kubernetes.io/serviceaccount/token"
         {{- end }}
       {{- end }}
@@ -325,7 +325,7 @@
         - --k8sServiceAccountJWTPath
         {{- if $.Values.global.sds.useTrustworthyJwt }}
         - "/var/run/secrets/tokens/istio-token"
-        {{- else }}
+        {{- else if $.Values.global.sds.useNormalJwt }}
         - "/var/run/secrets/kubernetes.io/serviceaccount/token"
         {{- end }}
       {{- end }}

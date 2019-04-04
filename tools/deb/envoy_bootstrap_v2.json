@@ -134,6 +134,7 @@
      
                                    }
                                 },
+                                {{ if .useJWT }}
                                 "call_credentials":[
                                   {
                                     "from_plugin":{
@@ -147,8 +148,16 @@
                                     }
                                  }
                                 ],
-                                "stat_prefix":"sdsstat",
-                                "credentials_factory_name":"envoy.grpc_credentials.file_based_metadata"
+                                "credentials_factory_name":"envoy.grpc_credentials.file_based_metadata",
+                                {{ else }}
+                                "call_credentials":[
+                                  {
+                                    "google_compute_engine": {
+                                    }
+                                 }
+                                ],
+                                {{ end }}
+                                "stat_prefix":"sdsstat"
                              }
                           }
                        ]
@@ -175,9 +184,9 @@
                               "target_uri":"unix:/var/run/sds/uds_path",
                               "channel_credentials":{
                                  "local_credentials":{
-   
                                  }
                               },
+                              {{ if .useJWT }}
                               "call_credentials":[
                                  {
                                     "from_plugin":{
@@ -191,8 +200,16 @@
                                     }
                                  }
                               ],
-                              "stat_prefix":"sdsstat",
-                              "credentials_factory_name":"envoy.grpc_credentials.file_based_metadata"
+                              "credentials_factory_name":"envoy.grpc_credentials.file_based_metadata",
+                              {{ else }}
+                              "call_credentials":[
+                                {
+                                  "google_compute_engine": {
+                                  }
+                               }
+                              ],
+                              {{ end }}
+                              "stat_prefix":"sdsstat"
                            }
                         }
                       ]

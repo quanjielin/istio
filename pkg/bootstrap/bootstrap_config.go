@@ -288,11 +288,17 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	opts["sdsEnabled"] = config.Sds.Enabled
 	opts["k8sJwtPath"] = config.Sds.K8SSaJwtPath
+	opts["useJWT"] = false
+	if config.Sds.K8SSaJwtPath != "" {
+		opts["useJWT"] = true
+	}
+
 	meta["WORKLOAD_SDS_ENABLED"] = strconv.FormatBool(config.Sds.Enabled)
 	meta["K8S_JWT_PATH"] = config.Sds.K8SSaJwtPath
 
 	log.Infof("*****sds enabled %v", opts["sdsEnabled"])
 	log.Infof("*****sds jwt path is %q", opts["k8sJwtPath"])
+	log.Infof("*****sidecar use jwt %v", opts["useJWT"])
 
 	ba, err := json.Marshal(meta)
 	if err != nil {

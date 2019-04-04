@@ -71,6 +71,7 @@ static_resources:
                   target_uri: unix:/var/run/sds/uds_path
                   channel_credentials:
                     local_credentials: {}
+{{- if .UseJWT }}
                   call_credentials:
                   - from_plugin:
                       name: envoy.grpc_credentials.file_based_metadata
@@ -78,8 +79,12 @@ static_resources:
                         header_key: istio_sds_credentials_header-bin
                         secret_data:
                           filename: {{ .K8sSAJWTPath }}
-                  stat_prefix: sdsstat
                   credentials_factory_name: envoy.grpc_credentials.file_based_metadata
+{{- else }}
+                  call_credentials:
+                  - google_compute_engine: {}
+{{- end }}
+                  stat_prefix: sdsstat
         combined_validation_context:
           default_validation_context:
             verify_subject_alt_name:
@@ -94,6 +99,7 @@ static_resources:
                     target_uri: unix:/var/run/sds/uds_path
                     channel_credentials:
                       local_credentials: {}
+{{- if .UseJWT }}                    
                     call_credentials:
                     - from_plugin:
                         name: envoy.grpc_credentials.file_based_metadata
@@ -101,8 +107,12 @@ static_resources:
                           header_key: istio_sds_credentials_header-bin
                           secret_data:
                             filename: {{ .K8sSAJWTPath }}
-                    stat_prefix: sdsstat
                     credentials_factory_name: envoy.grpc_credentials.file_based_metadata
+{{- else }}
+                    call_credentials:
+                    - google_compute_engine: {}
+{{- end }}
+                    stat_prefix: sdsstat
 {{- else }}
     tls_context:
       common_tls_context:
@@ -226,6 +236,7 @@ static_resources:
                     target_uri: unix:/var/run/sds/uds_path
                     channel_credentials:
                       local_credentials: {}
+{{- if .UseJWT }}
                     call_credentials:
                     - from_plugin:
                         name: envoy.grpc_credentials.file_based_metadata
@@ -233,8 +244,12 @@ static_resources:
                           header_key: istio_sds_credentials_header-bin
                           secret_data:
                             filename: {{ .K8sSAJWTPath }}
-                    stat_prefix: sdsstat
                     credentials_factory_name: envoy.grpc_credentials.file_based_metadata
+{{- else }}
+                    call_credentials:
+                    - google_compute_engine: {}
+{{- end }}
+                    stat_prefix: sdsstat
           combined_validation_context:
             default_validation_context:
               verify_subject_alt_name: []
@@ -248,15 +263,20 @@ static_resources:
                       target_uri: unix:/var/run/sds/uds_path
                       channel_credentials:
                         local_credentials: {}
-                      call_credentials:
+{{- if .UseJWT }}    
+                      call_credentials:                
                       - from_plugin:
                           name: envoy.grpc_credentials.file_based_metadata
                           config:
                             header_key: istio_sds_credentials_header-bin
                             secret_data:
                               filename: {{ .K8sSAJWTPath }}
-                      stat_prefix: sdsstat
                       credentials_factory_name: envoy.grpc_credentials.file_based_metadata
+{{- else }}
+                      call_credentials:  
+                      - google_compute_engine: {}
+{{- end }}
+                      stat_prefix: sdsstat
         require_client_certificate: true
 {{- else }}
       tls_context:
