@@ -158,6 +158,8 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 				return err
 			}
 
+			log.Infof("********get token %q from proxy %q", token, discReq.Node.Id)
+
 			con.proxyID = discReq.Node.Id
 			con.ResourceName = resourceName
 

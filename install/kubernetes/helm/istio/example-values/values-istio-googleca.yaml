@@ -9,9 +9,10 @@ global:
   sds:
     enabled: true
     udsPath: "unix:/var/run/sds/uds_path"
-    useTrustworthyJwt: true 
 
   trustDomain: "csm-fsa@istionodeagenttestproj4.iam.gserviceaccount.com"
+
+  useMCP: false
 
 nodeagent:
   enabled: true
@@ -19,4 +20,4 @@ nodeagent:
   env:
     CA_PROVIDER: "GoogleCA"
     CA_ADDR: "istioca.googleapis.com:443"
-    Plugins: "GoogleTokenExchange"
+

@@ -344,12 +344,13 @@ var (
 						opts["DisableReportCalls"] = "true"
 					}
 
-					if k8sServiceAccountJWTPath != "" {
-						opts["UseJWT"] = "enable"
-						opts["K8sSAJWTPath"] = k8sServiceAccountJWTPath
-					}
 					if sdsEnabled {
 						opts["SDSEnabled"] = "enable"
+
+						if k8sServiceAccountJWTPath != "NONE" {
+							opts["UseJWT"] = "enable"
+							opts["K8sSAJWTPath"] = k8sServiceAccountJWTPath
+						}
 					}
 
 					log.Infof("*****k8s jwt path is %q\n", opts["K8sSAJWTPath"])

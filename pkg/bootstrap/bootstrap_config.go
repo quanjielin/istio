@@ -286,11 +286,14 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 		log.Infof("*****sds jwt path is %q", opts["k8sJwtPath"])
 	*/
 
-	opts["sdsEnabled"] = config.Sds.Enabled
-	opts["k8sJwtPath"] = config.Sds.K8SSaJwtPath
 	opts["useJWT"] = false
-	if config.Sds.K8SSaJwtPath != "" {
-		opts["useJWT"] = true
+	opts["k8sJwtPath"] = ""
+	if config.Sds.Enabled {
+		opts["sdsEnabled"] = true
+		if config.Sds.K8SSaJwtPath != "NONE" {
+			opts["useJWT"] = true
+			opts["k8sJwtPath"] = config.Sds.K8SSaJwtPath
+		}
 	}
 
 	meta["WORKLOAD_SDS_ENABLED"] = strconv.FormatBool(config.Sds.Enabled)

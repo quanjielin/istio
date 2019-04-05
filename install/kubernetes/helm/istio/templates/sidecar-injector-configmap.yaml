@@ -163,6 +163,8 @@ data:
         - "/var/run/secrets/tokens/istio-token"
         {{- else if $.Values.global.sds.useNormalJwt }}
         - "/var/run/secrets/kubernetes.io/serviceaccount/token"
+        {{- else }}
+        - NONE
         {{- end }}
       {{ "[[- end ]]" }}
       {{- end }}
