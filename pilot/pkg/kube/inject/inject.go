@@ -65,6 +65,7 @@ var (
 		annotations.Register(annotationPolicy, "").Name:                                        alwaysValidFunc,
 		annotations.Register(annotationStatus, "").Name:                                        alwaysValidFunc,
 		annotations.Register("sidecar.istio.io/proxyImage", "").Name:                           alwaysValidFunc,
+		annotations.Register("sidecar.istio.io/enableSDS", "true").Name:                        alwaysValidFunc,
 		annotations.Register("sidecar.istio.io/interceptionMode", "").Name:                     validateInterceptionMode,
 		annotations.Register("status.sidecar.istio.io/port", "").Name:                          validateStatusPort,
 		annotations.Register("readiness.status.sidecar.istio.io/initialDelaySeconds", "").Name: validateUInt32,
