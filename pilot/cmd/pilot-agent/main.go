@@ -86,6 +86,8 @@ var (
 	tlsClientRootCert          string
 	tlsCertsToWatch            []string
 	loggingOptions             = log.DefaultOptions()
+	sdsEnabled                 bool
+	k8sServiceAccountJWTPath   string
 
 	wg sync.WaitGroup
 
@@ -206,6 +208,11 @@ var (
 			proxyConfig.ProxyAdminPort = int32(proxyAdminPort)
 			proxyConfig.Concurrency = int32(concurrency)
 
+			proxyConfig.Sds = &meshconfig.SDS{
+				Enabled:      sdsEnabled,
+				K8SSaJwtPath: k8sServiceAccountJWTPath,
+			}
+
 			var pilotSAN []string
 			ns := ""
 			switch controlPlaneAuthPolicy {
@@ -289,7 +296,8 @@ var (
 
 			log.Infof("Monitored certs: %#v", tlsCertsToWatch)
 			// since Envoy needs the certs for mTLS, we wait for them to become available before starting it
-			if controlPlaneAuthPolicy == meshconfig.AuthenticationPolicy_MUTUAL_TLS.String() {
+			// skip waiting cert if sds is enabled, otherwise it takes long time for pod to start.
+			if controlPlaneAuthPolicy == meshconfig.AuthenticationPolicy_MUTUAL_TLS.String() && !sdsEnabled {
 				for _, cert := range tlsCertsToWatch {
 					waitForCerts(cert, 2*time.Minute)
 				}
@@ -317,6 +325,20 @@ var (
 					if disableInternalTelemetry {
 						opts["DisableReportCalls"] = "true"
 					}
+
+					if sdsEnabled {
+						opts["SDSEnabled"] = "enable"
+
+						if k8sServiceAccountJWTPath != "NONE" {
+							opts["UseJWT"] = "enable"
+							opts["K8sSAJWTPath"] = k8sServiceAccountJWTPath
+						}
+					}
+
+					log.Infof("*****k8s jwt path is %q\n", opts["K8sSAJWTPath"])
+					log.Infof("*****sds enabled is %q\n", opts["SDSEnabled"])
+					log.Infof("*****UseJWT is %q\n", opts["UseJWT"])
+
 					tmpl, err := template.ParseFiles(templateFile)
 					if err != nil {
 						return err
@@ -558,6 +580,11 @@ func init() {
 		model.DefaultKey, "Absolute path to client key file used for istio mTLS")
 	proxyCmd.PersistentFlags().StringVar(&tlsClientRootCert, "tlsClientRootCert",
 		model.DefaultRootCert, "Absolute path to client root cert file used for istio mTLS")
+
+	proxyCmd.PersistentFlags().StringVar(&k8sServiceAccountJWTPath, "k8sServiceAccountJWTPath", "",
+		"The JWT path of k8s service account.")
+	proxyCmd.PersistentFlags().BoolVar(&sdsEnabled, "sdsEnabled", false,
+		"Flag to indicate if SDS(secret discovery service) is enabled.")
 
 	// Attach the Istio logging options to the command.
 	loggingOptions.AttachCobraFlags(rootCmd)
