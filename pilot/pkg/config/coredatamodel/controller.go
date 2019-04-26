@@ -87,6 +87,7 @@ func (c *Controller) ConfigDescriptor() model.ConfigDescriptor {
 // List returns all the config that is stored by type and namespace
 // if namespace is empty string it returns config for all the namespaces
 func (c *Controller) List(typ, namespace string) (out []model.Config, err error) {
+	log.Info("******coredatamodel.controller.List********")
 	_, ok := c.ConfigDescriptor().GetByType(typ)
 	if !ok {
 		return nil, fmt.Errorf("list unknown type %s", typ)

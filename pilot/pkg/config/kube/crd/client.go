@@ -467,8 +467,10 @@ func (cl *Client) Delete(typ, name, namespace string) error {
 
 // List implements store interface
 func (cl *Client) List(typ, namespace string) ([]model.Config, error) {
+	log.Infof("*******config/kube/crd/client.List type %q, ns %q*******", typ, namespace)
 	s, ok := knownTypes[typ]
 	if !ok {
+		log.Infof("unrecognized type %q", typ)
 		return nil, fmt.Errorf("unrecognized type %q", typ)
 	}
 	rc, ok := cl.clientset[apiVersion(&s.schema)]
@@ -479,7 +481,11 @@ func (cl *Client) List(typ, namespace string) ([]model.Config, error) {
 	if !exists {
 		return nil, fmt.Errorf("missing type %q", typ)
 	}
+	log.Infof("*******config/kube/crd/client.List schema %v", schema)
 
+	if knownTypes[schema.Type].collection == nil {
+		log.Infof("*******collection is nil")
+	}
 	list := knownTypes[schema.Type].collection.DeepCopyObject().(IstioObjectList)
 	errs := rc.dynamic.Get().
 		Namespace(namespace).
@@ -488,6 +494,7 @@ func (cl *Client) List(typ, namespace string) ([]model.Config, error) {
 
 	out := make([]model.Config, 0)
 	for _, item := range list.GetItems() {
+		log.Infof("*******list item %+v", item)
 		obj, err := ConvertObject(schema, item, cl.domainSuffix)
 		if err != nil {
 			errs = multierror.Append(errs, err)

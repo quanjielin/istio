@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/log"
 )
 
 var (
@@ -70,6 +71,7 @@ func (cr *store) Get(typ, name, namespace string) *model.Config {
 }
 
 func (cr *store) List(typ, namespace string) ([]model.Config, error) {
+	log.Info("******memory.config.List********")
 	data, exists := cr.data[typ]
 	if !exists {
 		return nil, nil

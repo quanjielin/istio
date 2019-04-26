@@ -686,6 +686,8 @@ $(e2e_files): $(HELM) $(HOME)/.helm istio-init.yaml
 		--namespace=istio-system \
 		--set global.tag=${TAG} \
 		--set global.hub=${HUB} \
+	    --set global.useMCP=false \
+		--set global.logging.level=debug \
 		--set global.imagePullPolicy=$(PULL_POLICY) \
 		--set global.proxy.enableCoreDump=${ENABLE_COREDUMP} \
 		--set istio_cni.enabled=${ENABLE_ISTIO_CNI} \

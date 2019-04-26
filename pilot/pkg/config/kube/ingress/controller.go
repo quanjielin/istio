@@ -203,6 +203,7 @@ func (c *controller) Get(typ, name, namespace string) *model.Config {
 }
 
 func (c *controller) List(typ, namespace string) ([]model.Config, error) {
+	log.Info("******kube.ingress.controller.List********")
 	if typ != model.Gateway.Type && typ != model.VirtualService.Type {
 		return nil, errUnsupportedOp
 	}

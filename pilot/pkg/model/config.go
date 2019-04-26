@@ -992,6 +992,7 @@ func (store *istioConfigStore) AuthenticationPolicyAlpha2ForLabels(namespace str
 	if err != nil {
 		return nil
 	}
+
 	var out []Config
 	for _, spec := range specs {
 		policy := spec.Spec.(*authn2.AuthenticationPolicy)
@@ -1008,6 +1009,7 @@ func (store *istioConfigStore) AuthenticationPolicyAlpha2ForLabels(namespace str
 		}
 		out = append(out, spec)
 	}
+
 	if len(out) > 0 {
 		sortConfigByCreationTime(out)
 		return &out[0]

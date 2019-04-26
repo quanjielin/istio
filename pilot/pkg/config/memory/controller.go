@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/log"
 )
 
 type controller struct {
@@ -91,5 +92,6 @@ func (c *controller) Delete(typ, key, namespace string) (err error) {
 }
 
 func (c *controller) List(typ, namespace string) ([]model.Config, error) {
+	log.Info("******memory.controller.List********")
 	return c.configStore.List(typ, namespace)
 }

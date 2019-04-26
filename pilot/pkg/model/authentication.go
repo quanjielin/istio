@@ -66,6 +66,7 @@ var JwtKeyResolver = newJwksResolver(JwtPubKeyExpireDuration, JwtPubKeyEvictionD
 // hostname (or label selector if specified) and port, if defined.
 // It also tries to resolve JWKS URI if necessary.
 func GetConsolidateAuthenticationPolicy(store IstioConfigStore, serviceInstance *ServiceInstance) *authn.Policy {
+	log.Info("*****GetConsolidateAuthenticationPolicy*****")
 	service := serviceInstance.Service
 	port := serviceInstance.Endpoint.ServicePort
 	labels := serviceInstance.Labels
@@ -87,7 +88,7 @@ func GetConsolidateAuthenticationPolicyAlpha2(store IstioConfigStore, serviceIns
 	config := store.AuthenticationPolicyAlpha2ForLabels(serviceInstance.Service.Attributes.Namespace, serviceInstance.Labels)
 	if config != nil {
 		policy := config.Spec.(*authn2.AuthenticationPolicy)
-		return policy.Spec;
+		return policy.Spec
 	}
 	return nil
 }

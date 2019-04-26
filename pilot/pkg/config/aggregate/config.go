@@ -22,6 +22,7 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 
 	"istio.io/istio/pilot/pkg/model"
+	"istio.io/istio/pkg/log"
 )
 
 var errorUnsupported = errors.New("unsupported operation: the config aggregator is read-only")
@@ -90,9 +91,14 @@ func (cr *store) Get(typ, name, namespace string) *model.Config {
 
 // List all configs in the stores.
 func (cr *store) List(typ, namespace string) ([]model.Config, error) {
+	log.Infof("*******aggregate.config.List typ %q ns %q****", typ, namespace)
+	if cr.stores == nil {
+		log.Info("******cr.stores is nil")
+	}
 	if len(cr.stores[typ]) == 0 {
 		return nil, fmt.Errorf("missing type %q", typ)
 	}
+	log.Infof("*****len of store is %d", len(cr.stores))
 	var errs *multierror.Error
 	var configs []model.Config
 	// Used to remove duplicated config
@@ -104,7 +110,9 @@ func (cr *store) List(typ, namespace string) ([]model.Config, error) {
 			errs = multierror.Append(errs, err)
 		}
 		for _, config := range storeConfigs {
+			log.Infof("*******aggregate.config is %+v", config)
 			key := config.Type + config.Namespace + config.Name
+			log.Infof("*******aggregate.config.key is %q", key)
 			if _, exist := configMap[key]; exist {
 				continue
 			}

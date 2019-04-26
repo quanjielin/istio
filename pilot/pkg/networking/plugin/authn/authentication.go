@@ -176,6 +176,12 @@ func setupFilterChains(authnPolicy *authn.Policy, sdsUdsPath string, sdsUseTrust
 // OnInboundFilterChains setups filter chains based on the authentication policy.
 func (Plugin) OnInboundFilterChains(in *plugin.InputParams) []plugin.FilterChain {
 	authnPolicy := model.GetConsolidateAuthenticationPolicy(in.Env.IstioConfigStore, in.ServiceInstance)
+
+	authnPolicy2 := model.GetConsolidateAuthenticationPolicyAlpha2(in.Env.IstioConfigStore, in.ServiceInstance)
+	if authnPolicy2 != nil {
+		log.Infof("*****OnInboundFilterChains authnPolicy2 is %v*****", *authnPolicy2)
+	}
+
 	return setupFilterChains(authnPolicy,
 		in.Env.Mesh.SdsUdsPath,
 		in.Env.Mesh.EnableSdsTokenMount,
@@ -365,6 +371,11 @@ func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableO
 
 func buildFilter(in *plugin.InputParams, mutable *plugin.MutableObjects) error {
 	authnPolicy := model.GetConsolidateAuthenticationPolicy(in.Env.IstioConfigStore, in.ServiceInstance)
+
+	authnPolicy2 := model.GetConsolidateAuthenticationPolicyAlpha2(in.Env.IstioConfigStore, in.ServiceInstance)
+	if authnPolicy2 != nil {
+		log.Infof("*****buildFilter authnPolicy2 is %+v*****", *authnPolicy2)
+	}
 
 	if mutable.Listener == nil || (len(mutable.Listener.FilterChains) != len(mutable.FilterChains)) {
 		return fmt.Errorf("expected same number of filter chains in listener (%d) and mutable (%d)", len(mutable.Listener.FilterChains), len(mutable.FilterChains))

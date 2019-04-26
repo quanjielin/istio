@@ -266,14 +266,18 @@ func (c *controller) Delete(typ, name, namespace string) error {
 }
 
 func (c *controller) List(typ, namespace string) ([]model.Config, error) {
+	log.Infof("******kube.controller.List********typ %q namespace %q", typ, namespace)
 	schema, ok := c.client.ConfigDescriptor().GetByType(typ)
 	if !ok {
 		return nil, fmt.Errorf("missing type %q", typ)
 	}
 
+	log.Info("******kube.controller.List.1********")
+
 	var newErrors sync.Map
 	var errs error
 	out := make([]model.Config, 0)
+	log.Info("******kube.controller.List.2********")
 	oldMap := InvalidCRDs.Load()
 	if oldMap != nil {
 		oldMap.(*sync.Map).Range(func(key, value interface{}) bool {
@@ -281,18 +285,25 @@ func (c *controller) List(typ, namespace string) ([]model.Config, error) {
 			return true
 		})
 	}
+	log.Info("******kube.controller.List.3********")
 	for _, data := range c.kinds[typ].informer.GetStore().List() {
+		log.Info("******kube.controller.List.4********")
 		item, ok := data.(IstioObject)
 		if !ok {
 			continue
 		}
 
+		log.Info("******kube.controller.List.4********")
+
 		if namespace != "" && namespace != item.GetObjectMeta().Namespace {
 			continue
 		}
 
+		log.Info("******kube.controller.List.5********")
+
 		config, err := ConvertObject(schema, item, c.client.domainSuffix)
 		if err != nil {
+			log.Info("******kube.controller.List.6********")
 			key := item.GetObjectMeta().Namespace + "/" + item.GetObjectMeta().Name
 			log.Errorf("Failed to convert %s object, ignoring: %s %v %v", typ, key, err, item.GetSpec())
 			// DO NOT RETURN ERROR: if a single object is bad, it'll be ignored (with a log message), but
@@ -301,9 +312,13 @@ func (c *controller) List(typ, namespace string) ([]model.Config, error) {
 			newErrors.Store(key, err)
 			k8sErrors.With(prometheus.Labels{"name": key}).Set(1)
 		} else {
+			log.Info("******kube.controller.List.7********")
 			out = append(out, *config)
 		}
 	}
+
+	log.Info("******kube.controller.List.8********")
 	InvalidCRDs.Store(&newErrors)
+	log.Info("******kube.controller.List.9********")
 	return out, errs
 }
