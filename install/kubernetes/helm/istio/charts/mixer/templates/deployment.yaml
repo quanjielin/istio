@@ -154,10 +154,7 @@
 {{- else }}
 {{ toYaml .Values.global.defaultResources | indent 10 }}
 {{- end }}
-        volumeMounts:
-        - name: istio-certs
-          mountPath: /etc/certs
-          readOnly: true
+       volumeMounts:
         {{- if $.Values.global.sds.enabled }}
         - name: sds-uds-path
           mountPath: /var/run/sds/uds_path
@@ -166,6 +163,10 @@
         - name: istio-token
           mountPath: /var/run/secrets/tokens
         {{- end }}
+        {{- else }}
+        - name: istio-certs
+          mountPath: /etc/certs
+          readOnly: true
         {{- end }}
         - name: uds-socket
           mountPath: /sock
@@ -334,9 +335,6 @@
 {{ toYaml .Values.global.defaultResources | indent 10 }}
 {{- end }}
         volumeMounts:
-        - name: istio-certs
-          mountPath: /etc/certs
-          readOnly: true
         {{- if $.Values.global.sds.enabled }}
         - name: sds-uds-path
           mountPath: /var/run/sds/uds_path
@@ -345,6 +343,10 @@
         - name: istio-token
           mountPath: /var/run/secrets/tokens
         {{- end }}
+        {{- else }}
+        - name: istio-certs
+          mountPath: /etc/certs
+          readOnly: true
         {{- end }}
         - name: uds-socket
           mountPath: /sock

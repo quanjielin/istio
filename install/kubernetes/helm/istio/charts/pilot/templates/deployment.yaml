@@ -178,9 +178,6 @@ spec:
 {{ toYaml .Values.global.defaultResources | indent 12 }}
 {{- end }}
           volumeMounts:
-          - name: istio-certs
-            mountPath: /etc/certs
-            readOnly: true
           {{- if $.Values.global.sds.enabled }}
           - name: sds-uds-path
             mountPath: /var/run/sds/uds_path
@@ -189,6 +186,10 @@ spec:
           - name: istio-token
             mountPath: /var/run/secrets/tokens
           {{- end }}
+          {{- else }}
+          - name: istio-certs
+            mountPath: /etc/certs
+            readOnly: true
           {{- end }}
 {{- end }}
       volumes:

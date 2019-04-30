@@ -237,6 +237,10 @@ spec:
           - name: istio-token
             mountPath: /var/run/secrets/tokens
           {{- end }}
+          {{- else }}
+          - name: istio-certs
+            mountPath: /etc/certs
+            readOnly: true
           {{- end }}
           {{- if $spec.sds }}
           {{- if $spec.sds.enabled }}
@@ -244,9 +248,6 @@ spec:
             mountPath: /var/run/ingress_gateway
           {{- end }}
           {{- end }}
-          - name: istio-certs
-            mountPath: /etc/certs
-            readOnly: true
           {{- range $spec.secretVolumes }}
           - name: {{ .name }}
             mountPath: {{ .mountPath | quote }}
