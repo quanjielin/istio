@@ -764,6 +764,8 @@ func (c *Controller) AppendInstanceHandler(f func(*model.ServiceInstance, model.
 			}
 		}
 
+		log.Infof("*******kube.controller.AppendInstanceHandler ep %+v", *ep)
+
 		c.updateEDS(ep, event)
 
 		return nil

@@ -29,6 +29,7 @@ import (
 	"istio.io/istio/pilot/pkg/networking/core"
 	"istio.io/istio/pilot/pkg/serviceregistry/kube"
 	"istio.io/istio/pkg/features/pilot"
+	"istio.io/istio/pkg/log"
 )
 
 var (
@@ -207,6 +208,7 @@ func NewDiscoveryServer(
 		// (especially mixerclient HTTP and quota)
 		configHandler := func(model.Config, model.Event) { out.clearCache() }
 		for _, descriptor := range model.IstioConfigTypes {
+			log.Infof("*****register config event handler for %q", descriptor.Type)
 			configCache.RegisterEventHandler(descriptor.Type, configHandler)
 		}
 	}
@@ -370,6 +372,7 @@ func (s *DiscoveryServer) doPush(full bool) {
 // clearCache will clear all envoy caches. Called by service, instance and config handlers.
 // This will impact the performance, since envoy will need to recalculate.
 func (s *DiscoveryServer) clearCache() {
+	log.Info("*****clearCache is called*****")
 	s.ConfigUpdate(true)
 }
 
@@ -398,6 +401,7 @@ func (s *DiscoveryServer) handleUpdates(stopCh <-chan struct{}) {
 	for {
 		select {
 		case r := <-s.updateChannel:
+			log.Info("*****handleUpdates updateChannel triggered****")
 			lastConfigUpdateTime = time.Now()
 			if debouncedEvents == 0 {
 				timeChan = time.After(DebounceAfter)
@@ -422,6 +426,7 @@ func (s *DiscoveryServer) handleUpdates(stopCh <-chan struct{}) {
 					pushCounter, debouncedEvents,
 					quietTime, eventDelay, fullPush)
 
+				log.Infof("*******handleUpdates.timeChan.doPush fullPush %b", fullPush)
 				go s.doPush(fullPush)
 				fullPush = false
 				debouncedEvents = 0

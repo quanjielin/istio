@@ -118,6 +118,8 @@ func (c *Controller) List(typ, namespace string) (out []model.Config, err error)
 // Apply receives changes from MCP server and creates the
 // corresponding config
 func (c *Controller) Apply(change *sink.Change) error {
+	log.Infof("*******coredatamodel.Apply, Collection %q", change.Collection)
+
 	descriptor, ok := c.descriptorsByCollection[change.Collection]
 	if !ok {
 		return fmt.Errorf("apply type not supported %s", change.Collection)
@@ -163,6 +165,8 @@ func (c *Controller) Apply(change *sink.Change) error {
 			Spec: obj.Body,
 		}
 
+		log.Infof("*******coredatamodel.Apply, conf %+v", *conf)
+
 		if err := schema.Validate(conf.Name, conf.Namespace, conf.Spec); err != nil {
 			// Do not return an error, instead discard the resources so that Pilot can process the rest.
 			log.Warnf("Discarding incoming MCP resource: validation failed (%s/%s): %v", conf.Namespace, conf.Name, err)
@@ -189,6 +193,7 @@ func (c *Controller) Apply(change *sink.Change) error {
 	if descriptor.Type == model.ServiceEntry.Type {
 		c.serviceEntryEvents(innerStore, prevStore)
 	} else {
+		log.Infof("*****coredatamodel.Apply, ClearDiscoveryServerCache")
 		c.options.ClearDiscoveryServerCache()
 	}
 

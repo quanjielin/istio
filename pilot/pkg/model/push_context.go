@@ -860,6 +860,8 @@ func (ps *PushContext) initDestinationRules(env *Environment) error {
 // Split out of DestinationRule expensive conversions, computed once per push.
 // This also allows tests to inject a config without having the mock.
 func (ps *PushContext) SetDestinationRules(configs []Config) {
+	log.Info("*********pushcontext.SetDestinationRules*********")
+
 	// Sort by time first. So if two destination rule have top level traffic policies
 	// we take the first one.
 	sortConfigByCreationTime(configs)
@@ -872,6 +874,9 @@ func (ps *PushContext) SetDestinationRules(configs []Config) {
 
 	for i := range configs {
 		rule := configs[i].Spec.(*networking.DestinationRule)
+
+		log.Infof("******pushcontext.SetDestinationRules rule %+v", rule)
+
 		rule.Host = string(ResolveShortnameToFQDN(rule.Host, configs[i].ConfigMeta))
 		// Store in an index for the config's namespace
 		// a proxy from this namespace will first look here for the destination rule for a given service

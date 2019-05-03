@@ -23,6 +23,7 @@ import (
 	"istio.io/istio/pilot/pkg/networking/plugin"
 	"istio.io/istio/pilot/pkg/networking/util"
 	"istio.io/istio/pilot/pkg/security/authn/factory"
+	"istio.io/istio/pkg/log"
 )
 
 // Plugin implements Istio mTLS auth
@@ -66,6 +67,7 @@ func (Plugin) OnInboundListener(in *plugin.InputParams, mutable *plugin.MutableO
 		return nil
 	}
 
+	log.Infof("******OnInboundListener for %q", in.Node.ID)
 	return buildFilter(in, mutable)
 }
 
