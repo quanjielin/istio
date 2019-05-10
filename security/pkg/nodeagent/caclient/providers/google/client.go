@@ -74,6 +74,8 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		ValidityDuration: certValidTTLInSec,
 	}
 
+	log.Infof("*******google ca client CSR Sign token %q", token)
+
 	// If the token doesn't have "Bearer " prefix, add it.
 	if !strings.HasPrefix(token, bearerTokenPrefix) {
 		token = bearerTokenPrefix + token
@@ -90,6 +92,8 @@ func (cl *googleCAClient) CSRSign(ctx context.Context, csrPEM []byte, token stri
 		log.Errorf("CertChain length is %d, expected more than 1", len(resp.CertChain))
 		return nil, errors.New("invalid response cert chain")
 	}
+
+	log.Infof("*******CSRSign certchain is %+v", resp.CertChain)
 
 	return resp.CertChain, nil
 }

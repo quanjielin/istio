@@ -308,7 +308,8 @@ func getCredentialToken(ctx context.Context) (string, error) {
 	// Get credential token from request k8sSAJwtTokenHeader(`istio_sds_credentail_header`) if it exists;
 	// otherwise fallback to credentialTokenHeader('authorization').
 	// if h, ok := metadata[pmodel.K8sSAJwtTokenHeaderKey]; ok {
-	if h, ok := metadata["istio_sds_credentail_header-bin"]; ok {
+	// if h, ok := metadata["istio_sds_credentail_header-bin"]; ok {
+	if h, ok := metadata["istio_sds_credentials_header-bin"]; ok {
 		if len(h) != 1 {
 			return "", fmt.Errorf("credential token from %q must have 1 value in gRPC metadata but got %d", pmodel.K8sSAJwtTokenHeaderKey, len(h))
 		}

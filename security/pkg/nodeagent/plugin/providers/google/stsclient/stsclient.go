@@ -111,7 +111,7 @@ func (p Plugin) ExchangeToken(ctx context.Context, trustDomain, k8sSAjwt string)
 }
 
 func constructAudience(trustDomain string) string {
-	// identitynamespace:istionodeagenttestproj4.svc.id.goog:https://container.googleapis.com/v1/projects/istionodeagenttestproj2/locations/us-central1-c/clusters/mpibetacluster2
+	// identitynamespace:istionodeagenttestproj2.svc.id.goog:https://container.googleapis.com/v1/projects/istionodeagenttestproj2/locations/us-central1-c/clusters/mpibetacluster2
 	if gkeClusterURL == "" {
 		return trustDomain
 	}
