@@ -205,8 +205,9 @@ func TestWorkloadAgentRefreshSecret(t *testing.T) {
 	testConnID := "proxy1-id"
 	_, err := sc.GenerateSecret(context.Background(), testConnID, testResourceName, "jwtToken1")
 	if err != nil {
-		t.Fatalf("Failed to get secrets: %v", err)
+		t.Fatalf("Failed to get secrets for %q: %v", testConnID, err)
 	}
+	sc.GenerateSecret(context.Background(), "proxy2-id", testResourceName, "jwtToken1")
 
 	// Wait until key rotation job run to update cached secret.
 	wait := 200 * time.Millisecond

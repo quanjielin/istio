@@ -432,7 +432,10 @@ func (sc *SecretCache) rotate(updateRootFlag bool) {
 
 	log.Debug("Refresh job running")
 
-	var secretMap sync.Map
+	//var secretMap sync.Map
+
+	secretMap := map[ConnKey]*model.SecretItem{}
+
 	wg := sync.WaitGroup{}
 	sc.secrets.Range(func(k interface{}, v interface{}) bool {
 		key := k.(ConnKey)
@@ -455,7 +458,10 @@ func (sc *SecretCache) rotate(updateRootFlag bool) {
 				CreatedTime:  t,
 				Version:      t.String(),
 			}
-			secretMap.Store(key, ns)
+
+			//secretMap.Store(key, ns)
+			secretMap[key] = ns
+
 			sc.callbackWithTimeout(connectionID, resourceName, ns)
 
 			return true
@@ -501,7 +507,8 @@ func (sc *SecretCache) rotate(updateRootFlag bool) {
 					return
 				}
 
-				secretMap.Store(key, ns)
+				//secretMap.Store(key, ns)
+				secretMap[key] = ns
 
 				sc.callbackWithTimeout(connectionID, key.ResourceName, ns)
 
@@ -513,12 +520,17 @@ func (sc *SecretCache) rotate(updateRootFlag bool) {
 
 	wg.Wait()
 
-	secretMap.Range(func(k interface{}, v interface{}) bool {
-		key := k.(ConnKey)
-		e := v.(*model.SecretItem)
-		sc.secrets.Store(key, *e)
-		return true
-	})
+	/*
+		secretMap.Range(func(k interface{}, v interface{}) bool {
+			key := k.(ConnKey)
+			e := v.(*model.SecretItem)
+			sc.secrets.Store(key, *e)
+			return true
+		}) */
+
+	for key, secret := range secretMap {
+		sc.secrets.Store(key, *secret)
+	}
 }
 
 func (sc *SecretCache) generateSecret(ctx context.Context, token, resourceName string, t time.Time) (*model.SecretItem, error) {
