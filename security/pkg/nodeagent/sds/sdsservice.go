@@ -29,6 +29,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	sds "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/gogo/protobuf/types"
+	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -60,7 +61,16 @@ var (
 
 	// Tracks connections, increment on each new connection.
 	connectionNumber = int64(0)
+
+	sdsClientCounts = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "nodeagent_sds",
+		Help: "Number of endpoints connected to this nodeagent through SDS.",
+	})
 )
+
+func init() {
+	prometheus.MustRegister(sdsClientCounts)
+}
 
 type discoveryStream interface {
 	Send(*xdsapi.DiscoveryResponse) error
@@ -353,6 +363,8 @@ func recycleConnection(conID, resourceName string) {
 	sdsClientsMutex.Lock()
 	defer sdsClientsMutex.Unlock()
 	staledClientKeys = append(staledClientKeys, key)
+
+	sdsClientCounts.Set(float64(len(sdsClients) - len(staledClientKeys)))
 }
 
 func parseDiscoveryRequest(discReq *xdsapi.DiscoveryRequest) (string /*resourceName*/, error) {
@@ -400,6 +412,8 @@ func addConn(k cache.ConnKey, conn *sdsConnection) {
 	sdsClientsMutex.Lock()
 	defer sdsClientsMutex.Unlock()
 	sdsClients[k] = conn
+
+	sdsClientCounts.Set(float64(len(sdsClients) - len(staledClientKeys)))
 }
 
 func pushSDS(con *sdsConnection) error {

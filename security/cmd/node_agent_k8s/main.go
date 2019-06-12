@@ -159,6 +159,12 @@ var (
 				return fmt.Errorf("failed to create sds service")
 			}
 
+			monitoringPort := uint(15014)
+			pprofPort := uint(9094)
+
+			go sds.StartSelfMonitoring(stop, monitoringPort)
+			go sds.StartProfiling(stop, pprofPort)
+
 			cmd.WaitSignal(stop)
 
 			return nil
