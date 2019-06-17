@@ -17,7 +17,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"istio.io/pkg/ctrlz"
@@ -26,7 +28,6 @@ import (
 	"github.com/spf13/cobra/doc"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"istio.io/istio/pkg/cmd"
 	"istio.io/istio/security/pkg/nodeagent/cache"
 	"istio.io/istio/security/pkg/nodeagent/sds"
 	"istio.io/istio/security/pkg/nodeagent/secretfetcher"
@@ -145,7 +146,8 @@ var (
 				return err
 			}
 
-			stop := make(chan struct{})
+			sigs := make(chan os.Signal, 1)
+			signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 			workloadSecretCache, gatewaySecretCache := newSecretCache(serverOptions)
 			if workloadSecretCache != nil {
@@ -155,16 +157,32 @@ var (
 				defer gatewaySecretCache.Close()
 			}
 
-			server, err := sds.NewServer(serverOptions, workloadSecretCache, gatewaySecretCache)
+			server := sds.NewServer(serverOptions, workloadSecretCache, gatewaySecretCache)
 			defer server.Stop()
-			if err != nil {
-				log.Errorf("failed to create sds service: %v", err)
-				return fmt.Errorf("failed to create sds service")
+
+			for {
+				select {
+				case <-server.Shutdown:
+					log.Info("server shutdown due to grpc server error")
+					return nil
+				case <-sigs:
+					log.Info("server shutdown due to SIGINT or SIGTERM")
+					return nil
+				}
 			}
 
-			cmd.WaitSignal(stop)
+			//if shutdown {
+			//	return nil
+			//}
 
-			return nil
+			/*
+				if err != nil {
+					log.Errorf("failed to create sds service: %v", err)
+					return fmt.Errorf("failed to create sds service")
+				} */
+
+			//cmd.WaitSignal(stop)
+
 		},
 	}
 )

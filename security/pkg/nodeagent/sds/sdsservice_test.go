@@ -158,11 +158,14 @@ func testHelper(t *testing.T, arg Options, cb secretCallback, testInvalidResourc
 	} else {
 		gst = nil
 	}
-	server, err := NewServer(arg, wst, gst)
+	/*
+		server, err := NewServer(arg, wst, gst)
+		defer server.Stop()
+		if err != nil {
+			t.Fatalf("failed to start grpc server for sds: %v", err)
+		}*/
+	server := NewServer(arg, wst, gst)
 	defer server.Stop()
-	if err != nil {
-		t.Fatalf("failed to start grpc server for sds: %v", err)
-	}
 
 	proxyID := "sidecar~127.0.0.1~id1~local"
 	if testInvalidResourceNames && arg.EnableWorkloadSDS {
@@ -252,11 +255,15 @@ func TestStreamSecretsPush(t *testing.T) {
 	st := &mockSecretStore{
 		checkToken: true,
 	}
-	server, err := NewServer(arg, st, nil)
+
+	/*
+		server, err := NewServer(arg, st, nil)
+		defer server.Stop()
+		if err != nil {
+			t.Fatalf("failed to start grpc server for sds: %v", err)
+		} */
+	server := NewServer(arg, st, nil)
 	defer server.Stop()
-	if err != nil {
-		t.Fatalf("failed to start grpc server for sds: %v", err)
-	}
 
 	proxyID := "sidecar~127.0.0.1~id2~local"
 	req := &api.DiscoveryRequest{

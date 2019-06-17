@@ -97,33 +97,48 @@ type Server struct {
 
 	grpcWorkloadServer *grpc.Server
 	grpcGatewayServer  *grpc.Server
+
+	Shutdown chan struct{}
 }
 
 // NewServer creates and starts the Grpc server for SDS.
-func NewServer(options Options, workloadSecretCache, gatewaySecretCache cache.SecretManager) (*Server, error) {
+func NewServer(options Options, workloadSecretCache, gatewaySecretCache cache.SecretManager) *Server {
 	s := &Server{
 		workloadSds: newSDSService(workloadSecretCache, false, options.RecycleInterval),
 		gatewaySds:  newSDSService(gatewaySecretCache, true, options.RecycleInterval),
+		Shutdown:    make(chan struct{}),
 	}
+
 	if options.EnableWorkloadSDS {
-		if err := s.initWorkloadSdsService(&options); err != nil {
-			sdsServiceLog.Errorf("Failed to initialize secret discovery service for workload proxies: %v", err)
-			return nil, err
-		}
-		sdsServiceLog.Infof("SDS gRPC server for workload UDS starts, listening on %q \n", options.WorkloadUDSPath)
+		s.initWorkloadSdsService(&options)
 	}
 
 	if options.EnableIngressGatewaySDS {
-		if err := s.initGatewaySdsService(&options); err != nil {
-			sdsServiceLog.Errorf("Failed to initialize secret discovery service for ingress gateway: %v", err)
-			return nil, err
-		}
-		sdsServiceLog.Infof("SDS gRPC server for ingress gateway controller starts, listening on %q \n",
-			options.IngressGatewayUDSPath)
+		s.initGatewaySdsService(&options)
 	}
+
+	/*
+		if options.EnableWorkloadSDS {
+			if err := s.initWorkloadSdsService(&options); err != nil {
+				sdsServiceLog.Errorf("Failed to initialize secret discovery service for workload proxies: %v", err)
+				return nil, err
+			}
+			sdsServiceLog.Infof("SDS gRPC server for workload UDS starts, listening on %q \n", options.WorkloadUDSPath)
+		}
+
+		if options.EnableIngressGatewaySDS {
+			if err := s.initGatewaySdsService(&options); err != nil {
+				sdsServiceLog.Errorf("Failed to initialize secret discovery service for ingress gateway: %v", err)
+				return nil, err
+			}
+			sdsServiceLog.Infof("SDS gRPC server for ingress gateway controller starts, listening on %q \n",
+				options.IngressGatewayUDSPath)
+		}
+	*/
+
 	version.Info.RecordComponentBuildTag("citadel_agent")
 
-	return s, nil
+	return s
 }
 
 // Stop closes the gRPC server.
@@ -163,6 +178,45 @@ func NewPlugins(in []string) []plugin.Plugin {
 	return plugins
 }
 
+func (s *Server) initWorkloadSdsService(options *Options) { //nolint: unparam
+	s.grpcWorkloadServer = grpc.NewServer(s.grpcServerOptions(options)...)
+	s.workloadSds.register(s.grpcWorkloadServer)
+
+	var err error
+	s.grpcWorkloadListener, err = setUpUds(options.WorkloadUDSPath)
+	if err != nil {
+		sdsServiceLog.Errorf("SDS grpc server for workload proxies failed to start: %v", err)
+		if s.Shutdown != nil {
+			close(s.Shutdown)
+			s.Shutdown = nil
+		}
+		return
+	}
+
+	go func() {
+		sdsServiceLog.Info("Start SDS grpc server for workload proxies")
+		if err = s.grpcWorkloadServer.Serve(s.grpcWorkloadListener); err != nil {
+			sdsServiceLog.Errorf("SDS grpc server for workload proxies failed to serve: %v", err)
+			if s.Shutdown != nil {
+				close(s.Shutdown)
+				s.Shutdown = nil
+			}
+		}
+
+		//waitTime := time.Second
+		//for i := 0; i < maxRetryTimes; i++ {
+		// Retry if Serve() fails
+		//	s.grpcWorkloadListener, err = setUpUds(options.WorkloadUDSPath)
+		//	if err != nil {
+		//		sdsServiceLog.Errorf("SDS grpc server for workload proxies failed to set up UDS: %v", err)
+		//	}
+		//	time.Sleep(waitTime)
+		//	waitTime *= 2
+		//}
+	}()
+}
+
+/*
 func (s *Server) initWorkloadSdsService(options *Options) error { //nolint: unparam
 	s.grpcWorkloadServer = grpc.NewServer(s.grpcServerOptions(options)...)
 	s.workloadSds.register(s.grpcWorkloadServer)
@@ -191,8 +245,54 @@ func (s *Server) initWorkloadSdsService(options *Options) error { //nolint: unpa
 	}()
 
 	return nil
+} */
+
+func (s *Server) initGatewaySdsService(options *Options) {
+	s.grpcGatewayServer = grpc.NewServer(s.grpcServerOptions(options)...)
+	s.gatewaySds.register(s.grpcGatewayServer)
+
+	var err error
+	s.grpcGatewayListener, err = setUpUds(options.IngressGatewayUDSPath)
+	if err != nil {
+		sdsServiceLog.Errorf("SDS grpc server for ingress gateway proxy failed to start: %v", err)
+		if s.Shutdown != nil {
+			close(s.Shutdown)
+			s.Shutdown = nil
+		}
+		return
+	}
+
+	go func() {
+		sdsServiceLog.Info("Start SDS grpc server for ingress gateway proxy")
+		if err = s.grpcGatewayServer.Serve(s.grpcGatewayListener); err != nil {
+			sdsServiceLog.Errorf("SDS grpc server for ingress gateway proxy failed to serve: %v", err)
+			if s.Shutdown != nil {
+				close(s.Shutdown)
+				s.Shutdown = nil
+			}
+		}
+	}()
+
+	/*
+		go func() {
+			sdsServiceLog.Info("Start SDS grpc server for ingress gateway proxy")
+			waitTime := time.Second
+			for i := 0; i < maxRetryTimes; i++ {
+				// Retry if Serve() fails
+				if err = s.grpcGatewayServer.Serve(s.grpcGatewayListener); err != nil {
+					sdsServiceLog.Errorf("SDS grpc server for ingress gateway proxy failed to start: %v", err)
+				}
+				s.grpcGatewayListener, err = setUpUds(options.IngressGatewayUDSPath)
+				if err != nil {
+					sdsServiceLog.Errorf("SDS grpc server for ingress gateway proxy failed to set up UDS: %v", err)
+				}
+				time.Sleep(waitTime)
+				waitTime *= 2
+			}
+		}() */
 }
 
+/*
 func (s *Server) initGatewaySdsService(options *Options) error {
 	s.grpcGatewayServer = grpc.NewServer(s.grpcServerOptions(options)...)
 	s.gatewaySds.register(s.grpcGatewayServer)
@@ -222,7 +322,7 @@ func (s *Server) initGatewaySdsService(options *Options) error {
 	}()
 
 	return nil
-}
+}*/
 
 func setUpUds(udsPath string) (net.Listener, error) {
 	// Remove unix socket before use.
