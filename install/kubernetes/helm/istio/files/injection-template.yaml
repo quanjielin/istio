@@ -277,11 +277,10 @@ containers:
     name: custom-sds-token
     readOnly: true
   {{- end }}
-  {{- else }}
+  {{- end }}
   - mountPath: /etc/certs/
     name: istio-certs
     readOnly: true
-  {{- end }}
   {{- if and (eq .Values.global.proxy.tracer "lightstep") .Values.global.tracer.lightstep.cacertPath }}
   - mountPath: {{ directory .ProxyConfig.GetTracing.GetLightstep.GetCacertPath }}
     name: lightstep-certs
@@ -320,7 +319,7 @@ volumes:
         expirationSeconds: 43200
         audience: {{ .Values.global.trustDomain }}
 {{- end }}
-{{- else }}
+{{- end }}
 - name: istio-certs
   secret:
     optional: true
@@ -335,7 +334,6 @@ volumes:
   {{ toYaml $value | indent 2 }}
   {{ end }}
   {{ end }}
-{{- end }}
 {{- if and (eq .Values.global.proxy.tracer "lightstep") .Values.global.tracer.lightstep.cacertPath }}
 - name: lightstep-certs
   secret:
