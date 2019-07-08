@@ -259,7 +259,8 @@ var overrideVar = env.RegisterStringVar("ISTIO_BOOTSTRAP", "", "")
 // WriteBootstrap generates an envoy config based on config and epoch, and returns the filename.
 // TODO: in v2 some of the LDS ports (port, http_port) should be configured in the bootstrap.
 func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilotSAN []string,
-	opts map[string]interface{}, localEnv []string, nodeIPs []string, dnsRefreshRate string) (string, error) {
+	opts map[string]interface{}, localEnv []string, nodeIPs []string, dnsRefreshRate string,
+	sdsEnabled bool, sdsUdsPath, sdsTokenPath string) (string, error) {
 	if opts == nil {
 		opts = map[string]interface{}{}
 	}
@@ -338,6 +339,16 @@ func WriteBootstrap(config *meshconfig.ProxyConfig, node string, epoch int, pilo
 
 	// Support multiple network interfaces
 	meta[model.NodeMetadataInstanceIPs] = strings.Join(nodeIPs, ",")
+
+	if sdsEnabled {
+		opts["sds_enabled"] = "true"
+		opts["k8s_jwt_path"] = sdsTokenPath
+
+		meta[model.NodeMetadataSdsTokenPath] = sdsTokenPath
+		meta[model.NodeMetadataSdsUDSPath] = sdsUdsPath
+	}
+
+	log.Infof("******WriteBootstrap sdsenabled %+v, token path %q", opts["sds_enabled"], opts["k8s_jwt_path"])
 
 	ba, err := json.Marshal(meta)
 	if err != nil {

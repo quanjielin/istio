@@ -113,9 +113,15 @@ func ConstructSdsSecretConfigForGatewayListener(name, sdsUdsPath string) *auth.S
 
 // ConstructSdsSecretConfig constructs SDS Sececret Configuration for workload proxy.
 func ConstructSdsSecretConfig(name, sdsUdsPath string, useK8sSATrustworthyJwt, useK8sSANormalJwt bool, metadata map[string]string) *auth.SdsSecretConfig {
-	if name == "" || sdsUdsPath == "" {
+	/*
+		if name == "" || sdsUdsPath == "" {
+			return nil
+		} */
+
+	if name == "" || metadata[model.NodeMetadataSdsUDSPath] == "" {
 		return nil
 	}
+	log.Infof("****SDS uds path is (%v)", metadata[model.NodeMetadataSdsUDSPath])
 
 	gRPCConfig := &core.GrpcService_GoogleGrpc{
 		TargetUri:  sdsUdsPath,
@@ -131,16 +137,32 @@ func ConstructSdsSecretConfig(name, sdsUdsPath string, useK8sSATrustworthyJwt, u
 	// Otherwise, if useK8sSATrustworthyJwt is set, envoy will fetch and pass k8s sa trustworthy jwt(which is available for k8s 1.10 or higher),
 	// pass it to SDS server to request key/cert; if trustworthy jwt isn't available, envoy will fetch and pass normal k8s sa jwt to
 	// request key/cert.
+
+	/*
+		if sdsTokenPath, found := metadata[model.NodeMetadataSdsTokenPath]; found && len(sdsTokenPath) > 0 {
+			log.Debugf("SDS token path is (%v)", sdsTokenPath)
+			gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
+			gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(sdsTokenPath, K8sSAJwtTokenHeaderKey)
+		} else if useK8sSATrustworthyJwt {
+			gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
+			gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSATrustworthyJwtFileName, K8sSAJwtTokenHeaderKey)
+		} else if useK8sSANormalJwt {
+			gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
+			gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSAJwtFileName, K8sSAJwtTokenHeaderKey)
+		} else {
+			gRPCConfig.CallCredentials = []*core.GrpcService_GoogleGrpc_CallCredentials{
+				{
+					CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
+						GoogleComputeEngine: &types.Empty{},
+					},
+				},
+			}
+		} */
+
 	if sdsTokenPath, found := metadata[model.NodeMetadataSdsTokenPath]; found && len(sdsTokenPath) > 0 {
-		log.Debugf("SDS token path is (%v)", sdsTokenPath)
+		log.Infof("****SDS token path is (%v)", sdsTokenPath)
 		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
 		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(sdsTokenPath, K8sSAJwtTokenHeaderKey)
-	} else if useK8sSATrustworthyJwt {
-		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
-		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSATrustworthyJwtFileName, K8sSAJwtTokenHeaderKey)
-	} else if useK8sSANormalJwt {
-		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
-		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSAJwtFileName, K8sSAJwtTokenHeaderKey)
 	} else {
 		gRPCConfig.CallCredentials = []*core.GrpcService_GoogleGrpc_CallCredentials{
 			{
