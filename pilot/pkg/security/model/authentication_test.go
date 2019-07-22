@@ -92,95 +92,51 @@ func TestParseJwksURI(t *testing.T) {
 }
 
 func TestConstructSdsSecretConfig(t *testing.T) {
-	trustworthyMetaConfig := &v2alpha.FileBasedMetadataConfig{
-		SecretData: &core.DataSource{
-			Specifier: &core.DataSource_Filename{
-				Filename: K8sSATrustworthyJwtFileName,
-			},
-		},
-		HeaderKey: K8sSAJwtTokenHeaderKey,
-	}
-
-	normalMetaConfig := &v2alpha.FileBasedMetadataConfig{
-		SecretData: &core.DataSource{
-			Specifier: &core.DataSource_Filename{
-				Filename: K8sSAJwtFileName,
-			},
-		},
-		HeaderKey: K8sSAJwtTokenHeaderKey,
-	}
-
 	cases := []struct {
-		serviceAccount    string
-		sdsUdsPath        string
-		expected          *auth.SdsSecretConfig
-		useTrustworthyJwt bool
-		useNormalJwt      bool
-		metadata          map[string]string
+		serviceAccount string
+		metadata       map[string]string
+		expectedConfig *v2alpha.FileBasedMetadataConfig
 	}{
 		{
 			serviceAccount: "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			expected: &auth.SdsSecretConfig{
-				Name: "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: &core.ConfigSource{
-					InitialFetchTimeout: features.InitialFetchTimeout,
-					ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
-						ApiConfigSource: &core.ApiConfigSource{
-							ApiType: core.ApiConfigSource_GRPC,
-							GrpcServices: []*core.GrpcService{
-								{
-									TargetSpecifier: &core.GrpcService_GoogleGrpc_{
-										GoogleGrpc: &core.GrpcService_GoogleGrpc{
-											TargetUri:          "/tmp/sdsuds.sock",
-											StatPrefix:         SDSStatPrefix,
-											ChannelCredentials: constructLocalChannelCredConfig(),
-											CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
-												constructGCECallCredConfig(),
-											},
-										},
-									},
-								},
-							},
-							RefreshDelay: nil,
-						},
+			metadata:       map[string]string{model.NodeMetadataSdsTrustJwt: "1"},
+			expectedConfig: &v2alpha.FileBasedMetadataConfig{
+				SecretData: &core.DataSource{
+					Specifier: &core.DataSource_Filename{
+						Filename: K8sSATrustworthyJwtFileName,
 					},
 				},
-			},
-		},
-		{
-			serviceAccount:    "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:        "/tmp/sdsuds.sock",
-			useTrustworthyJwt: true,
-			expected: &auth.SdsSecretConfig{
-				Name:      "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: constructsdsconfighelper(K8sSATrustworthyJwtFileName, K8sSAJwtTokenHeaderKey, trustworthyMetaConfig),
+				HeaderKey: K8sSAJwtTokenHeaderKey,
 			},
 		},
 		{
 			serviceAccount: "spiffe://cluster.local/ns/bar/sa/foo",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			useNormalJwt:   true,
-			expected: &auth.SdsSecretConfig{
-				Name:      "spiffe://cluster.local/ns/bar/sa/foo",
-				SdsConfig: constructsdsconfighelper(K8sSAJwtFileName, K8sSAJwtTokenHeaderKey, normalMetaConfig),
+			metadata:       map[string]string{model.NodeMetadataSdsTrustJwt: "0"},
+			expectedConfig: &v2alpha.FileBasedMetadataConfig{
+				SecretData: &core.DataSource{
+					Specifier: &core.DataSource_Filename{
+						Filename: K8sSAJwtFileName,
+					},
+				},
+				HeaderKey: K8sSAJwtTokenHeaderKey,
 			},
 		},
 		{
 			serviceAccount: "",
-			sdsUdsPath:     "/tmp/sdsuds.sock",
-			expected:       nil,
-		},
-		{
-			serviceAccount: "",
-			sdsUdsPath:     "spiffe://cluster.local/ns/bar/sa/foo",
-			expected:       nil,
+			expectedConfig: nil,
 		},
 	}
 
 	for _, c := range cases {
-		if got := ConstructSdsSecretConfig(c.serviceAccount, c.sdsUdsPath, c.useTrustworthyJwt, c.useNormalJwt, c.metadata); !reflect.DeepEqual(got, c.expected) {
-			t.Errorf("ConstructSdsSecretConfig: got(%#v) != want(%#v)\n", got, c.expected)
+		expected := &auth.SdsSecretConfig{
+			Name:      c.serviceAccount,
+			SdsConfig: constructsdsconfighelper(c.metadata, K8sSAJwtTokenHeaderKey, c.expectedConfig),
+		}
+		if c.serviceAccount == "" {
+			expected = nil
+		}
+		if got := ConstructSdsSecretConfig(c.serviceAccount, c.metadata); !reflect.DeepEqual(got, expected) {
+			t.Errorf("ConstructSdsSecretConfig: got(%+v) != want(%+v)\n", got, expected)
 		}
 	}
 }
@@ -252,7 +208,12 @@ func constructGCECallCredConfig() *core.GrpcService_GoogleGrpc_CallCredentials {
 	}
 }
 
-func constructsdsconfighelper(tokenFileName, headerKey string, metaConfig *v2alpha.FileBasedMetadataConfig) *core.ConfigSource {
+func constructsdsconfighelper(metadata map[string]string, headerKey string, metaConfig *v2alpha.FileBasedMetadataConfig) *core.ConfigSource {
+	tokenFileName := K8sSAJwtFileName
+	if metadata[model.NodeMetadataSdsTrustJwt] == "1" {
+		tokenFileName = K8sSATrustworthyJwtFileName
+	}
+
 	any := findOrMarshalFileBasedMetadataConfig(tokenFileName, headerKey, metaConfig)
 	return &core.ConfigSource{
 		InitialFetchTimeout: features.InitialFetchTimeout,
@@ -263,7 +224,7 @@ func constructsdsconfighelper(tokenFileName, headerKey string, metaConfig *v2alp
 					{
 						TargetSpecifier: &core.GrpcService_GoogleGrpc_{
 							GoogleGrpc: &core.GrpcService_GoogleGrpc{
-								TargetUri:              "/tmp/sdsuds.sock",
+								TargetUri:              WorkloadSdsUdsPath,
 								StatPrefix:             SDSStatPrefix,
 								CredentialsFactoryName: "envoy.grpc_credentials.file_based_metadata",
 								ChannelCredentials:     constructLocalChannelCredConfig(),

@@ -38,6 +38,9 @@ const (
 	// SDSRootResourceName is the sdsconfig name for root CA, used for fetching root cert.
 	SDSRootResourceName = "ROOTCA"
 
+	// WorkloadSdsUdsPath is sds unix domain socket path.
+	WorkloadSdsUdsPath = "/var/run/sds/sds-uds-path"
+
 	// K8sSATrustworthyJwtFileName is the token volume mount file name for k8s trustworthy jwt token.
 	K8sSATrustworthyJwtFileName = "/var/run/secrets/tokens/istio-token"
 
@@ -112,6 +115,7 @@ func ConstructSdsSecretConfigForGatewayListener(name, sdsUdsPath string) *auth.S
 }
 
 // ConstructSdsSecretConfig constructs SDS Sececret Configuration for workload proxy.
+/*
 func ConstructSdsSecretConfig(name, sdsUdsPath string, useK8sSATrustworthyJwt, useK8sSANormalJwt bool, metadata map[string]string) *auth.SdsSecretConfig {
 	if name == "" || sdsUdsPath == "" {
 		return nil
@@ -149,6 +153,60 @@ func ConstructSdsSecretConfig(name, sdsUdsPath string, useK8sSATrustworthyJwt, u
 				},
 			},
 		}
+	}
+
+	return &auth.SdsSecretConfig{
+		Name: name,
+		SdsConfig: &core.ConfigSource{
+			ConfigSourceSpecifier: &core.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &core.ApiConfigSource{
+					ApiType: core.ApiConfigSource_GRPC,
+					GrpcServices: []*core.GrpcService{
+						{
+							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
+								GoogleGrpc: gRPCConfig,
+							},
+						},
+					},
+				},
+			},
+			InitialFetchTimeout: features.InitialFetchTimeout,
+		},
+	}
+} */
+
+// ConstructSdsSecretConfig constructs SDS Sececret Configuration for workload proxy.
+func ConstructSdsSecretConfig(name string, metadata map[string]string) *auth.SdsSecretConfig {
+	if name == "" {
+		return nil
+	}
+
+	useK8sSATrustworthyJwt := metadata[model.NodeMetadataSdsTrustJwt] == "1"
+
+	gRPCConfig := &core.GrpcService_GoogleGrpc{
+		TargetUri:  WorkloadSdsUdsPath,
+		StatPrefix: SDSStatPrefix,
+		ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
+			CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
+				LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
+			},
+		},
+	}
+
+	// If metadata[NodeMetadataSdsTokenPath] is non-empty, envoy will fetch tokens from metadata[NodeMetadataSdsTokenPath].
+	// Otherwise, if useK8sSATrustworthyJwt is set, envoy will fetch and pass k8s sa trustworthy jwt(which is available for k8s 1.10 or higher),
+	// pass it to SDS server to request key/cert; if trustworthy jwt isn't available, envoy will fetch and pass normal k8s sa jwt to
+	// request key/cert.
+	if sdsTokenPath, found := metadata[model.NodeMetadataSdsTokenPath]; found && len(sdsTokenPath) > 0 {
+		log.Debugf("SDS token path is (%v)", sdsTokenPath)
+		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
+		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(sdsTokenPath, K8sSAJwtTokenHeaderKey)
+	} else if useK8sSATrustworthyJwt {
+		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
+		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSATrustworthyJwtFileName, K8sSAJwtTokenHeaderKey)
+	} else {
+		gRPCConfig.CredentialsFactoryName = FileBasedMetadataPlugName
+		gRPCConfig.CallCredentials = ConstructgRPCCallCredentials(K8sSAJwtFileName, K8sSAJwtTokenHeaderKey)
 	}
 
 	return &auth.SdsSecretConfig{

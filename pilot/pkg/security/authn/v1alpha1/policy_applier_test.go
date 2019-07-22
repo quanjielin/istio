@@ -625,13 +625,13 @@ func TestOnInboundFilterChains(t *testing.T) {
 		RequireClientCertificate: proto.BoolTrue,
 	}
 	cases := []struct {
-		name              string
-		in                *authn.Policy
-		sdsUdsPath        string
-		useTrustworthyJwt bool
-		useNormalJwt      bool
-		expected          []plugin.FilterChain
-		meta              map[string]string
+		name string
+		in   *authn.Policy
+		//sdsUdsPath string
+		//useTrustworthyJwt bool
+		//useNormalJwt      bool
+		expected []plugin.FilterChain
+		meta     map[string]string
 	}{
 		{
 			name: "NoAuthnPolicy",
@@ -730,18 +730,18 @@ func TestOnInboundFilterChains(t *testing.T) {
 					},
 				},
 			},
-			sdsUdsPath: "/tmp/sdsuds.sock",
+			meta: map[string]string{model.NodeMetadataSdsEnabled: "1"},
 			expected: []plugin.FilterChain{
 				{
 					TLSContext: &auth.DownstreamTlsContext{
 						CommonTlsContext: &auth.CommonTlsContext{
 							TlsCertificateSdsSecretConfigs: []*auth.SdsSecretConfig{
-								constructSDSConfig(authn_model.SDSDefaultResourceName, "/tmp/sdsuds.sock"),
+								constructSDSConfig(authn_model.SDSDefaultResourceName),
 							},
 							ValidationContextType: &auth.CommonTlsContext_CombinedValidationContext{
 								CombinedValidationContext: &auth.CommonTlsContext_CombinedCertificateValidationContext{
-									DefaultValidationContext:         &auth.CertificateValidationContext{VerifySubjectAltName: []string{} /*subjectAltNames*/},
-									ValidationContextSdsSecretConfig: constructSDSConfig(authn_model.SDSRootResourceName, "/tmp/sdsuds.sock"),
+									DefaultValidationContext:         &auth.CertificateValidationContext{VerifySubjectAltName: []string{}},
+									ValidationContextSdsSecretConfig: constructSDSConfig(authn_model.SDSRootResourceName),
 								},
 							},
 							AlpnProtocols: []string{"h2", "http/1.1"},
@@ -806,19 +806,14 @@ func TestOnInboundFilterChains(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		got := NewPolicyApplier(c.in).InboundFilterChain(
-			c.sdsUdsPath,
-			c.useTrustworthyJwt,
-			c.useNormalJwt,
-			c.meta,
-		)
+		got := NewPolicyApplier(c.in).InboundFilterChain(c.meta)
 		if !reflect.DeepEqual(got, c.expected) {
 			t.Errorf("[%v] unexpected filter chains, got %v, want %v", c.name, got, c.expected)
 		}
 	}
 }
 
-func constructSDSConfig(name, sdsudspath string) *auth.SdsSecretConfig {
+func constructSDSConfig(name string) *auth.SdsSecretConfig {
 	return &auth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &core.ConfigSource{
@@ -830,20 +825,15 @@ func constructSDSConfig(name, sdsudspath string) *auth.SdsSecretConfig {
 						{
 							TargetSpecifier: &core.GrpcService_GoogleGrpc_{
 								GoogleGrpc: &core.GrpcService_GoogleGrpc{
-									TargetUri:  sdsudspath,
+									TargetUri:  authn_model.WorkloadSdsUdsPath,
 									StatPrefix: authn_model.SDSStatPrefix,
 									ChannelCredentials: &core.GrpcService_GoogleGrpc_ChannelCredentials{
 										CredentialSpecifier: &core.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
 											LocalCredentials: &core.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
 										},
 									},
-									CallCredentials: []*core.GrpcService_GoogleGrpc_CallCredentials{
-										{
-											CredentialSpecifier: &core.GrpcService_GoogleGrpc_CallCredentials_GoogleComputeEngine{
-												GoogleComputeEngine: &types.Empty{},
-											},
-										},
-									},
+									CredentialsFactoryName: authn_model.FileBasedMetadataPlugName,
+									CallCredentials:        authn_model.ConstructgRPCCallCredentials(authn_model.K8sSAJwtFileName, authn_model.K8sSAJwtTokenHeaderKey),
 								},
 							},
 						},

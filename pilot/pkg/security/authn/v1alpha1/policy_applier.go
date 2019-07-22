@@ -322,7 +322,8 @@ func (a v1alpha1PolicyApplier) AuthNFilter(proxyType model.NodeType, isXDSMarsha
 	return out
 }
 
-func (a v1alpha1PolicyApplier) InboundFilterChain(sdsUdsPath string, sdsUseTrustworthyJwt, sdsUseNormalJwt bool, meta map[string]string) []plugin.FilterChain {
+//func (a v1alpha1PolicyApplier) InboundFilterChain(sdsUdsPath string, sdsUseTrustworthyJwt, sdsUseNormalJwt bool, meta map[string]string) []plugin.FilterChain {
+func (a v1alpha1PolicyApplier) InboundFilterChain(meta map[string]string) []plugin.FilterChain {
 	if a.policy == nil || len(a.policy.Peers) == 0 {
 		return nil
 	}
@@ -344,7 +345,31 @@ func (a v1alpha1PolicyApplier) InboundFilterChain(sdsUdsPath string, sdsUseTrust
 		},
 		RequireClientCertificate: protovalue.BoolTrue,
 	}
-	if sdsUdsPath == "" {
+	if meta[model.NodeMetadataSdsEnabled] == "1" {
+		tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
+			authn_model.ConstructSdsSecretConfig(authn_model.SDSDefaultResourceName, meta),
+		}
+
+		tls.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_CombinedValidationContext{
+			CombinedValidationContext: &auth.CommonTlsContext_CombinedCertificateValidationContext{
+				DefaultValidationContext:         &auth.CertificateValidationContext{VerifySubjectAltName: []string{} /*subjectAltNames*/},
+				ValidationContextSdsSecretConfig: authn_model.ConstructSdsSecretConfig(authn_model.SDSRootResourceName, meta),
+			},
+		}
+
+	} else {
+		/*
+			tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
+				authn_model.ConstructSdsSecretConfig(authn_model.SDSDefaultResourceName, sdsUdsPath, sdsUseTrustworthyJwt, sdsUseNormalJwt, meta),
+			}
+
+			tls.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_CombinedValidationContext{
+				CombinedValidationContext: &auth.CommonTlsContext_CombinedCertificateValidationContext{
+					DefaultValidationContext: &auth.CertificateValidationContext{VerifySubjectAltName: []string{}},
+					ValidationContextSdsSecretConfig: authn_model.ConstructSdsSecretConfig(authn_model.SDSRootResourceName,
+						sdsUdsPath, sdsUseTrustworthyJwt, sdsUseNormalJwt, meta),
+				},
+			} */
 		base := meta[features.BaseDir] + model.AuthCertsPath
 		tlsServerRootCert := model.GetOrDefaultFromMap(meta, model.NodeMetadataTLSServerRootCert, base+model.RootCertFilename)
 
@@ -365,18 +390,6 @@ func (a v1alpha1PolicyApplier) InboundFilterChain(sdsUdsPath string, sdsUseTrust
 						Filename: tlsServerKey,
 					},
 				},
-			},
-		}
-	} else {
-		tls.CommonTlsContext.TlsCertificateSdsSecretConfigs = []*auth.SdsSecretConfig{
-			authn_model.ConstructSdsSecretConfig(authn_model.SDSDefaultResourceName, sdsUdsPath, sdsUseTrustworthyJwt, sdsUseNormalJwt, meta),
-		}
-
-		tls.CommonTlsContext.ValidationContextType = &auth.CommonTlsContext_CombinedValidationContext{
-			CombinedValidationContext: &auth.CommonTlsContext_CombinedCertificateValidationContext{
-				DefaultValidationContext: &auth.CertificateValidationContext{VerifySubjectAltName: []string{} /*subjectAltNames*/},
-				ValidationContextSdsSecretConfig: authn_model.ConstructSdsSecretConfig(authn_model.SDSRootResourceName,
-					sdsUdsPath, sdsUseTrustworthyJwt, sdsUseNormalJwt, meta),
 			},
 		}
 	}
