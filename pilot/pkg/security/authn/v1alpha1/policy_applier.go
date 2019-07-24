@@ -323,7 +323,6 @@ func (a v1alpha1PolicyApplier) AuthNFilter(proxyType model.NodeType, isXDSMarsha
 	return out
 }
 
-//func (a v1alpha1PolicyApplier) InboundFilterChain(sdsUdsPath string, sdsUseTrustworthyJwt, sdsUseNormalJwt bool, meta map[string]string) []plugin.FilterChain {
 func (a v1alpha1PolicyApplier) InboundFilterChain(meta map[string]string) []plugin.FilterChain {
 	if a.policy == nil || len(a.policy.Peers) == 0 {
 		return nil

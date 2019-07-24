@@ -625,11 +625,8 @@ func TestOnInboundFilterChains(t *testing.T) {
 		RequireClientCertificate: proto.BoolTrue,
 	}
 	cases := []struct {
-		name string
-		in   *authn.Policy
-		//sdsUdsPath string
-		//useTrustworthyJwt bool
-		//useNormalJwt      bool
+		name     string
+		in       *authn.Policy
 		expected []plugin.FilterChain
 		meta     map[string]string
 	}{
