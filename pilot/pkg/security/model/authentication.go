@@ -39,7 +39,7 @@ const (
 	SDSRootResourceName = "ROOTCA"
 
 	// WorkloadSdsUdsPath is sds unix domain socket path.
-	WorkloadSdsUdsPath = "/var/run/sds/uds_path"
+	WorkloadSdsUdsPath = "unix:/var/run/sds/uds_path"
 
 	// K8sSATrustworthyJwtFileName is the token volume mount file name for k8s trustworthy jwt token.
 	K8sSATrustworthyJwtFileName = "/var/run/secrets/tokens/istio-token"

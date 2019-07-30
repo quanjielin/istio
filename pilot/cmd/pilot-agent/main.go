@@ -302,7 +302,7 @@ var (
 
 			opts := make(map[string]interface{})
 			if sdsEnabled {
-				opts["sds_uds_path"] = sdsUdsPathVar.Get()
+				opts["sds_uds_path"] = "unix:" + sdsUdsPathVar.Get()
 				opts["sds_token_path"] = sdsTokenPath
 
 				log.Infof("*****opts sds_uds_path %q, sds_token_path %q", opts["sds_uds_path"], opts["sds_token_path"])
