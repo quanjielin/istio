@@ -193,6 +193,7 @@ func (s *sdsservice) DeltaSecrets(stream sds.SecretDiscoveryService_DeltaSecrets
 
 // StreamSecrets serves SDS discovery requests and SDS push requests
 func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecretsServer) error {
+	log.Info("*********StreamSecrets is called")
 	token := ""
 	var ctx context.Context
 
@@ -257,6 +258,7 @@ func (s *sdsservice) StreamSecrets(stream sds.SecretDiscoveryService_StreamSecre
 					return err
 				}
 				token = t
+				log.Infof("*********StreamSecrets token is %q", token)
 			}
 
 			// Update metric for metrics.

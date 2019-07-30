@@ -135,6 +135,7 @@ func NewSecretFetcher(ingressGatewayAgent bool, endpoint, caProviderName string,
 			secretFetcherLog.Errorf("failed to create caClient: %v", err)
 			return ret, fmt.Errorf("failed to create caClient")
 		}
+		log.Info("*****ca client created successfully")
 		ret.UseCaClient = true
 		ret.CaClient = caClient
 	}
@@ -251,9 +252,9 @@ func extractK8sSecretIntoSecretItem(scrt *v1.Secret, t time.Time) (serverItem, c
 		}
 
 		certificateAuthorityNewSecret := &model.SecretItem{
-			ResourceName:                  resourceName,
-			CreatedTime:                   t,
-			Version:                       t.String(),
+			ResourceName: resourceName,
+			CreatedTime:  t,
+			Version:      t.String(),
 			RootCertOwnedByCompoundSecret: false,
 			RootCert:                      caCert,
 			ExpireTime:                    rootCertExpireTime,

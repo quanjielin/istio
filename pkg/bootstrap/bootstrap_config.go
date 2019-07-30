@@ -402,6 +402,7 @@ func writeBootstrapForPlatform(config *meshconfig.ProxyConfig, node string, epoc
 	meta[model.NodeMetadataInstanceIPs] = strings.Join(nodeIPs, ",")
 
 	if opts["sds_uds_path"] != nil && opts["sds_token_path"] != nil {
+		log.Infof("***bootstrap_config, sds_uds_path %q, sds_token_path %q", opts["sds_uds_path"], opts["sds_token_path"])
 		// sds is enabled
 		meta[model.NodeMetadataSdsEnabled] = "1"
 
